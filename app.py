@@ -7,6 +7,7 @@ from routes.user_route import user_bp
 from routes.home_route import home_bp
 from database.setup import ensure_database_and_tables, reset_database
 from database.db import check_connection
+from models import create_dummy_data
 import os 
 from datetime import datetime
 
@@ -36,15 +37,38 @@ def inject_now():
 def index():
     return render_template('home.html')
 
-# Debug and utility routes can remain here
+# Debug and utility routes
 @app.route('/debug', methods=['GET', 'POST'])
 def debug_page():
     if request.method == 'POST':
         action = request.form.get('action')
+        
         if action == 'reset_db':
-            reset_database()
-            flash("Base de données réinitialisée !", "info")
+            try:
+                reset_database()
+                flash("Base de données réinitialisée avec succès!", "success")
+            except Exception as e:
+                flash(f"Erreur lors de la réinitialisation: {str(e)}", "danger")
+                
+        elif action == 'create_sample_data':
+            try:
+                create_dummy_data()
+                flash("Données de test créées avec succès!", "success")
+            except Exception as e:
+                flash(f"Erreur lors de la création des données: {str(e)}", "danger")
+                
+        elif action == 'check_db':
+            try:
+                status = check_connection()
+                if status:
+                    flash("Connexion à la base de données réussie!", "success")
+                else:
+                    flash("Erreur de connexion à la base de données", "danger")
+            except Exception as e:
+                flash(f"Erreur lors de la vérification: {str(e)}", "danger")
+                
         return redirect(url_for('debug_page'))
+        
     return render_template('debug.html')
 
 @app.route('/debug/cleanup_filieres', methods=['POST'])

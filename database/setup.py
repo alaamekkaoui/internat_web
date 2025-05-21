@@ -1,13 +1,41 @@
 import sqlite3
 import os
 from models.user import User
+from dotenv import load_dotenv
+from database.db import get_connection
+import pymysql
 
-def get_connection():
-    """Get a connection to the SQLite database"""
-    db_path = 'internat.db'
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+load_dotenv()
+
+MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost')
+MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
+MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
+MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB', 'internat')
+
+def get_connection(use_db=True):
+    """Get a connection to the MySQL database"""
+    try:
+        if use_db:
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                database=MYSQL_DATABASE,
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+        else:
+            conn = pymysql.connect(
+                host=MYSQL_HOST,
+                user=MYSQL_USER,
+                password=MYSQL_PASSWORD,
+                charset='utf8mb4',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+        return conn
+    except pymysql.Error as e:
+        print(f"Error connecting to database: {e}")
+        raise e
 
 def create_tables():
     """Create all necessary tables if they don't exist"""
@@ -79,36 +107,190 @@ def create_tables():
     conn.close()
 
 def reset_database():
-    """Reset the entire database by dropping and recreating all tables."""
+    """Force drop and recreate the database"""
+    conn = None
+    cursor = None
     try:
-        # Delete the database file if it exists
-        if os.path.exists('internat.db'):
-            os.remove('internat.db')
-            print("Old database file removed.")
+        print("DEBUG: Resetting database...")
+        # First connect without database
+        conn = get_connection(use_db=False)
+        cursor = conn.cursor()
         
-        # Create new database and tables
+        # Kill all connections to the database
+        print(f"DEBUG: Killing all connections to {MYSQL_DATABASE}...")
+        cursor.execute(f"""
+            SELECT CONCAT('KILL ', id, ';')
+            FROM information_schema.processlist
+            WHERE db = '{MYSQL_DATABASE}';
+        """)
+        kill_commands = cursor.fetchall()
+        for cmd in kill_commands:
+            try:
+                cursor.execute(list(cmd.values())[0])
+            except:
+                pass
+        
+        # Drop database if exists
+        print(f"DEBUG: Dropping database {MYSQL_DATABASE}...")
+        cursor.execute(f"DROP DATABASE IF EXISTS `{MYSQL_DATABASE}`")
+        print(f"DEBUG: Dropped database {MYSQL_DATABASE}")
+        
+        # Create database
+        print(f"DEBUG: Creating database {MYSQL_DATABASE}...")
+        cursor.execute(f"CREATE DATABASE `{MYSQL_DATABASE}` DEFAULT CHARACTER SET 'utf8mb4'")
+        print(f"DEBUG: Created database {MYSQL_DATABASE}")
+        
+        # Select the database
+        conn.select_db(MYSQL_DATABASE)
+        
+        # Create tables
         ensure_database_and_tables()
-        print("Database reset successfully!")
+        
+        conn.commit()
+        print("DEBUG: Database reset completed successfully")
         return True
     except Exception as e:
-        print(f"Error resetting database: {e}")
-        return False
+        print(f"DEBUG: Error resetting database: {str(e)}")
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 def ensure_database_and_tables():
     """Ensure database and tables exist"""
+    conn = None
+    cursor = None
     try:
-        # Create tables
-        create_tables()
+        # First connect without database
+        conn = get_connection(use_db=False)
+        cursor = conn.cursor()
         
-        # Create default admin user if no users exist
-        user_model = User()
-        user_model.create_default_admin()
+        # Create database if it doesn't exist
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{MYSQL_DATABASE}` DEFAULT CHARACTER SET 'utf8mb4'")
+        conn.commit()
         
-        print("Database and tables initialized successfully!")
-        return True
-    except Exception as e:
-        print(f"Error initializing database: {e}")
-        return False
+        # Now connect to the database
+        conn.select_db(MYSQL_DATABASE)
+        
+        # Check if tables exist
+        cursor.execute("SHOW TABLES")
+        tables = cursor.fetchall()
+        # Get the first column name from the result
+        if tables and len(tables) > 0:
+            first_key = list(tables[0].keys())[0]
+            existing_tables = [table[first_key] for table in tables]
+        else:
+            existing_tables = []
+
+        # Create filieres table first (no foreign keys)
+        if 'filieres' not in existing_tables:
+            print("Creating filieres table...")
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS filieres (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL UNIQUE,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ''')
+            print("Filieres table created successfully!")
+
+        # Create rooms table (no foreign keys)
+        if 'rooms' not in existing_tables:
+            print("Creating rooms table...")
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rooms (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                room_number VARCHAR(32) NOT NULL,
+                pavilion VARCHAR(64) NOT NULL,
+                room_type ENUM('single','double','triple') NOT NULL,
+                capacity INT NOT NULL,
+                is_used BOOLEAN DEFAULT 0,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ''')
+            print("Rooms table created successfully!")
+
+        # Create users table (no foreign keys)
+        if 'users' not in existing_tables:
+            print("Creating users table...")
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ''')
+            print("Users table created successfully!")
+
+        # Create students table (depends on filieres)
+        if 'students' not in existing_tables:
+            print("Creating students table...")
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS students (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                nom VARCHAR(255) NOT NULL,
+                prenom VARCHAR(255) NOT NULL,
+                matricule VARCHAR(50) UNIQUE NOT NULL,
+                cin VARCHAR(50) UNIQUE NOT NULL,
+                date_naissance DATE NOT NULL,
+                nationalite VARCHAR(100) NOT NULL,
+                sexe ENUM('M', 'F') NOT NULL,
+                telephone VARCHAR(20) NOT NULL,
+                email VARCHAR(255),
+                annee_universitaire VARCHAR(20) NOT NULL,
+                filiere_id BIGINT UNSIGNED,
+                dossier_medicale TEXT,
+                observation TEXT,
+                laureat VARCHAR(100) NOT NULL,
+                num_chambre VARCHAR(20),
+                mobilite VARCHAR(100) NOT NULL,
+                vie_associative TEXT NOT NULL,
+                bourse VARCHAR(100) NOT NULL,
+                photo VARCHAR(255),
+                type_section VARCHAR(50) NOT NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (filiere_id) REFERENCES filieres(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ''')
+            print("Students table created successfully!")
+
+        # Create room_history table (depends on students and rooms)
+        if 'room_history' not in existing_tables:
+            print("Creating room_history table...")
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS room_history (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                student_id BIGINT UNSIGNED NOT NULL,
+                room_id BIGINT UNSIGNED NOT NULL,
+                year VARCHAR(16) NOT NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (student_id) REFERENCES students(id),
+                FOREIGN KEY (room_id) REFERENCES rooms(id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ''')
+            print("Room history table created successfully!")
+
+        conn.commit()
+        print("All tables checked and created successfully!")
+        
+    except pymysql.Error as e:
+        print(f"Error creating database/tables: {e}")
+        if conn:
+            conn.rollback()
+        raise e
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 if __name__ == "__main__":
     ensure_database_and_tables() 

@@ -1,30 +1,105 @@
 {% extends "base.html" %}
 
-{% block title %}Debug{% endblock %}
+{% block title %}Debug - Internat{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header bg-warning text-dark">
-                <h2 class="mb-0">Page de Debug</h2>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Attention : Ces actions sont irréversibles et peuvent affecter les données de l'application.
-                </div>
-                
-                <form method="POST" id="debugForm" onsubmit="return confirmAction(this);">
-                    <div class="d-grid gap-3">
-                        <button type="submit" name="action" value="reset_db" class="btn btn-danger">
-                            <i class="fas fa-database"></i> Réinitialiser la Base de Données
-                        </button>
-                        <button type="submit" name="action" value="create_dummy" class="btn btn-success">
-                            <i class="fas fa-plus-circle"></i> Créer des Données de Test
-                        </button>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="display-1 mb-3">
+                            <i class="bi bi-bug text-danger"></i>
+                        </div>
+                        <h2>Page de Debug</h2>
+                        <p class="text-muted">Outils de développement et de maintenance</p>
                     </div>
-                </form>
+
+                    <div class="row g-4">
+                        <!-- Reset Database -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-database-dash text-danger"></i>
+                                        Réinitialiser la Base de Données
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        Supprime et recrée toutes les tables. ATTENTION: Cette action est irréversible!
+                                    </p>
+                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
+                                        <input type="hidden" name="action" value="reset_db">
+                                        <button type="submit" class="btn btn-danger" 
+                                                onclick="return confirm('Êtes-vous sûr de vouloir réinitialiser la base de données? Cette action est irréversible!')">
+                                            <i class="bi bi-trash"></i> Réinitialiser
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Create Default Admin -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-person-plus text-primary"></i>
+                                        Créer Admin par Défaut
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        Crée un compte administrateur avec les identifiants par défaut (admin/admin)
+                                    </p>
+                                    <a href="{{ url_for('auth.create_admin') }}" class="btn btn-primary">
+                                        <i class="bi bi-person-plus"></i> Créer Admin
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Create Sample Data -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-database-add text-success"></i>
+                                        Créer Données de Test
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        Ajoute des données de test (filieres, chambres, etc.)
+                                    </p>
+                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
+                                        <input type="hidden" name="action" value="create_sample_data">
+                                        <button type="submit" class="btn btn-success">
+                                            <i class="bi bi-plus-circle"></i> Créer Données
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Database Status -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <i class="bi bi-info-circle text-info"></i>
+                                        État de la Base de Données
+                                    </h5>
+                                    <p class="card-text text-muted">
+                                        Vérifie la connexion et l'état de la base de données
+                                    </p>
+                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
+                                        <input type="hidden" name="action" value="check_db">
+                                        <button type="submit" class="btn btn-info text-white">
+                                            <i class="bi bi-check-circle"></i> Vérifier
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

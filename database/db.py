@@ -2,87 +2,107 @@
 import os
 from dotenv import load_dotenv
 import pymysql
-from .config import DB_CONFIG
+from pymysql.cursors import DictCursor
+import time
 
 load_dotenv()
 
-DB_CONFIG = {
-    'host': os.environ.get('MYSQL_HOST', 'localhost'),
-    'user': os.environ.get('MYSQL_USER', 'root'),
-    'password': os.environ.get('MYSQL_PASSWORD', ''),
-    'database': os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB'),
-    'charset': 'utf8mb4',
-    'cursorclass': pymysql.cursors.DictCursor
-}
+MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost')
+MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
+MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
+MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB', 'internat')
 
-def check_connection():
-    """Check if database connection is working and print connection details."""
-    try:
-        print("\n=== Attempting Database Connection ===")
-        print(f"Connecting to {DB_CONFIG['host']} as {DB_CONFIG['user']}...")
-        
-        conn = pymysql.connect(
-            host=DB_CONFIG['host'],
-            user=DB_CONFIG['user'],
-            password=DB_CONFIG['password'],
-            charset=DB_CONFIG['charset']
-        )
-        
-        print("✓ Successfully connected to MySQL server")
-        
-        # Try to select the database
+def get_connection(use_db=True, max_retries=3, retry_delay=1):
+    """Get a connection to the MySQL database with retry logic"""
+    retries = 0
+    last_error = None
+    
+    while retries < max_retries:
         try:
-            print(f"Attempting to select database '{DB_CONFIG['database']}'...")
-            conn.select_db(DB_CONFIG['database'])
-            print("✓ Successfully selected database")
-            
-            # Check if we can execute a query
+            if use_db:
+                conn = pymysql.connect(
+                    host=MYSQL_HOST,
+                    user=MYSQL_USER,
+                    password=MYSQL_PASSWORD,
+                    database=MYSQL_DATABASE,
+                    charset='utf8mb4',
+                    cursorclass=DictCursor,
+                    connect_timeout=10,
+                    read_timeout=30,
+                    write_timeout=30
+                )
+            else:
+                conn = pymysql.connect(
+                    host=MYSQL_HOST,
+                    user=MYSQL_USER,
+                    password=MYSQL_PASSWORD,
+                    charset='utf8mb4',
+                    cursorclass=DictCursor,
+                    connect_timeout=10,
+                    read_timeout=30,
+                    write_timeout=30
+                )
+            return conn
+        except pymysql.Error as e:
+            last_error = e
+            retries += 1
+            if retries < max_retries:
+                print(f"Connection attempt {retries} failed: {e}. Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+            else:
+                print(f"Failed to connect after {max_retries} attempts. Last error: {e}")
+                raise last_error
+
+def execute_query(query, params=None, fetch=True, max_retries=3):
+    """Execute a query with retry logic"""
+    conn = None
+    cursor = None
+    retries = 0
+    last_error = None
+    
+    while retries < max_retries:
+        try:
+            conn = get_connection()
             cursor = conn.cursor()
-            cursor.execute("SHOW TABLES")
-            tables = cursor.fetchall()
-            print(f"✓ Found {len(tables)} tables in database")
-            cursor.close()
+            
+            if params:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+                
+            if fetch:
+                result = cursor.fetchall()
+            else:
+                conn.commit()
+                result = cursor.lastrowid
+                
+            return result
             
         except pymysql.Error as e:
-            print(f"✗ Error selecting database: {e}")
-            print("Attempting to create database...")
-            try:
-                cursor = conn.cursor()
-                cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{DB_CONFIG['database']}` DEFAULT CHARACTER SET 'utf8mb4'")
-                conn.commit()
+            last_error = e
+            retries += 1
+            if retries < max_retries:
+                print(f"Query attempt {retries} failed: {e}. Retrying...")
+                time.sleep(1)  # Wait before retry
+            else:
+                print(f"Failed to execute query after {max_retries} attempts. Last error: {e}")
+                raise last_error
+        finally:
+            if cursor:
                 cursor.close()
-                print("✓ Database created successfully")
-                conn.select_db(DB_CONFIG['database'])
-                print("✓ Successfully selected database")
-            except pymysql.Error as e:
-                print(f"✗ Error creating database: {e}")
-            
-        conn.close()
-        print("===============================\n")
-        
-    except pymysql.Error as e:
-        print("\n=== Database Connection Error ===")
-        print(f"✗ Failed to connect to MySQL: {e}")
-        print("\nPlease check:")
-        print("1. MySQL server is running")
-        print("2. MySQL credentials are correct")
-        print("3. MySQL user has proper permissions")
-        print("===============================\n")
+            if conn:
+                conn.close()
 
-def get_connection(use_db=True):
-    """Get a database connection.
-    
-    Args:
-        use_db (bool): Whether to include the database name in the connection.
-                      Set to False when creating the database.
-    """
-    config = DB_CONFIG.copy()
-    if not use_db:
-        config.pop('database', None)
-    
+def check_connection():
+    """Check if database connection is working"""
     try:
-        conn = pymysql.connect(**config)
-        return conn
-    except pymysql.Error as e:
-        print(f"Database connection error: {e}")
-        raise
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1")
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Database connection check failed: {e}")
+        return False

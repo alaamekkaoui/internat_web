@@ -1,11 +1,6 @@
-import sqlite3
+import pymysql
 from werkzeug.security import generate_password_hash
 from database.db import get_connection
-
-def dict_factory(cursor, row):
-    """Convert database row objects to a dictionary"""
-    fields = [column[0] for column in cursor.description]
-    return {key: value for key, value in zip(fields, row)}
 
 class User:
     def __init__(self):
@@ -17,39 +12,30 @@ class User:
             conn = get_connection()
             cursor = conn.cursor()
             
-            # Drop existing table to ensure clean state
-            cursor.execute('DROP TABLE IF EXISTS users')
-            
             # Create table with correct structure
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    role TEXT NOT NULL DEFAULT 'user',
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(255) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    role VARCHAR(50) NOT NULL DEFAULT 'user',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
             conn.commit()
-            
-            # Verify table structure
-            cursor.execute("PRAGMA table_info(users)")
-            columns = cursor.fetchall()
-            print("DEBUG: Table structure:", columns)
-            
-            conn.close()
             print("DEBUG: Table created successfully")
         except Exception as e:
             print(f"DEBUG: Error creating table: {str(e)}")
             raise e
+        finally:
+            conn.close()
 
     def get_user_by_username(self, username):
         try:
             print(f"DEBUG: Getting user by username: {username}")
             conn = get_connection()
-            conn.row_factory = dict_factory
-            cursor = conn.cursor()
-            query = 'SELECT * FROM users WHERE username = ?'
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            query = 'SELECT * FROM users WHERE username = %s'
             params = (username,)
             print(f"DEBUG: Query: {query}")
             print(f"DEBUG: Params: {params}")
@@ -68,9 +54,8 @@ class User:
         try:
             print(f"DEBUG: Getting user by id: {user_id}")
             conn = get_connection()
-            conn.row_factory = dict_factory
-            cursor = conn.cursor()
-            query = 'SELECT * FROM users WHERE id = ?'
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
+            query = 'SELECT * FROM users WHERE id = %s'
             params = (user_id,)
             print(f"DEBUG: Query: {query}")
             print(f"DEBUG: Params: {params}")
@@ -91,12 +76,7 @@ class User:
             conn = get_connection()
             cursor = conn.cursor()
             
-            # Verify table structure before insert
-            cursor.execute("PRAGMA table_info(users)")
-            columns = cursor.fetchall()
-            print("DEBUG: Current table structure:", columns)
-            
-            query = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)'
+            query = 'INSERT INTO users (username, password, role) VALUES (%s, %s, %s)'
             params = (username, password, role)
             print(f"DEBUG: Query: {query}")
             print(f"DEBUG: Params: {params}")
@@ -117,7 +97,7 @@ class User:
             print(f"DEBUG: Updating password for user_id: {user_id}")
             conn = get_connection()
             cursor = conn.cursor()
-            query = 'UPDATE users SET password = ? WHERE id = ?'
+            query = 'UPDATE users SET password = %s WHERE id = %s'
             params = (new_password, user_id)
             print(f"DEBUG: Query: {query}")
             print(f"DEBUG: Params: {params}")
@@ -139,7 +119,7 @@ class User:
             cursor = conn.cursor()
             
             if role is not None:
-                query = 'UPDATE users SET role = ? WHERE id = ?'
+                query = 'UPDATE users SET role = %s WHERE id = %s'
                 params = (role, user_id)
                 print(f"DEBUG: Query: {query}")
                 print(f"DEBUG: Params: {params}")
@@ -160,7 +140,7 @@ class User:
             print(f"DEBUG: Deleting user {user_id}")
             conn = get_connection()
             cursor = conn.cursor()
-            query = 'DELETE FROM users WHERE id = ?'
+            query = 'DELETE FROM users WHERE id = %s'
             params = (user_id,)
             print(f"DEBUG: Query: {query}")
             print(f"DEBUG: Params: {params}")
@@ -179,8 +159,7 @@ class User:
         try:
             print("DEBUG: Getting all users")
             conn = get_connection()
-            conn.row_factory = dict_factory
-            cursor = conn.cursor()
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
             query = 'SELECT * FROM users'
             print(f"DEBUG: Query: {query}")
             cursor.execute(query)
