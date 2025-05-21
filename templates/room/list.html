@@ -1,0 +1,38 @@
+<!-- templates/room/list.html -->
+{% extends "base.html" %}
+{% block title %}Liste des Chambres{% endblock %}
+{% block content %}
+<h3 class="text-success"><i class="bi bi-door-closed"></i> Liste des Chambres</h3>
+<a href="/rooms/add" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Ajouter une chambre</a>
+<table class="table">
+  <thead class="table-success">
+    <tr>
+      <th>ID</th>
+      <th>Numéro</th>
+      <th>Pavillon</th>
+      <th>Type</th>
+      <th>Capacité</th>
+      <th>Occupée</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for room in rooms %}
+    <tr>
+      <td>{{ room.id }}</td>
+      <td>{{ room.room_number }}</td>
+      <td>{{ room.pavilion }}</td>
+      <td>{{ room.room_type }}</td>
+      <td>{{ room.capacity }}</td>
+      <td>{% if room.is_used %}Oui{% else %}Non{% endif %}</td>
+      <td>
+        <a href="/rooms/{{ room.id }}/edit" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+        <form action="/rooms/{{ room.id }}/delete" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cette chambre ?');"><i class="bi bi-trash"></i></button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

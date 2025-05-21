@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Accueil - Internat{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-center mb-5">Tableau de Bord</h1>
+    
+    <div class="row g-4">
+        <!-- Students Card -->
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-1 mb-3">
+                        <i class="bi bi-people-fill text-primary"></i>
+                    </div>
+                    <h5 class="card-title">Étudiants</h5>
+                    <p class="display-4 mb-0">{{ total_students }}</p>
+                    <p class="text-muted">étudiants inscrits</p>
+                    <a href="/students" class="btn btn-outline-primary mt-3">
+                        <i class="bi bi-arrow-right"></i> Voir la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filieres Card -->
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-1 mb-3">
+                        <i class="bi bi-book-fill text-success"></i>
+                    </div>
+                    <h5 class="card-title">Filières</h5>
+                    <p class="display-4 mb-0">{{ total_filieres }}</p>
+                    <p class="text-muted">filières disponibles</p>
+                    <a href="/filieres" class="btn btn-outline-success mt-3">
+                        <i class="bi bi-arrow-right"></i> Voir la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rooms Card -->
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm hover-card">
+                <div class="card-body text-center">
+                    <div class="display-1 mb-3">
+                        <i class="bi bi-house-fill text-warning"></i>
+                    </div>
+                    <h5 class="card-title">Chambres</h5>
+                    <p class="display-4 mb-0">{{ total_rooms }}</p>
+                    <p class="text-muted">chambres disponibles</p>
+                    <a href="/rooms" class="btn btn-outline-warning mt-3">
+                        <i class="bi bi-arrow-right"></i> Voir la liste
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Statistiques Rapides</h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Chambres Occupées</h6>
+                            <p class="h3">{{ occupied_rooms }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Chambres Libres</h6>
+                            <p class="h3">{{ available_rooms }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Étudiants Internes</h6>
+                            <p class="h3">{{ internal_students }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Étudiants Externes</h6>
+                            <p class="h3">{{ external_students }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+}
+
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.display-1 {
+    font-size: 4rem;
+}
+
+.btn {
+    border-radius: 20px;
+    padding: 8px 20px;
+}
+
+.text-primary {
+    color: #145A32 !important;
+}
+
+.text-success {
+    color: #A7C636 !important;
+}
+
+.text-warning {
+    color: #E10600 !important;
+}
+
+.btn-outline-primary {
+    color: #145A32;
+    border-color: #145A32;
+}
+
+.btn-outline-primary:hover {
+    background-color: #145A32;
+    border-color: #145A32;
+}
+
+.btn-outline-success {
+    color: #A7C636;
+    border-color: #A7C636;
+}
+
+.btn-outline-success:hover {
+    background-color: #A7C636;
+    border-color: #A7C636;
+}
+
+.btn-outline-warning {
+    color: #E10600;
+    border-color: #E10600;
+}
+
+.btn-outline-warning:hover {
+    background-color: #E10600;
+    border-color: #E10600;
+}
+</style>
+{% endblock %}

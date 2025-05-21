@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Debug{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h2 class="mb-0">Page de Debug</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Attention : Ces actions sont irréversibles et peuvent affecter les données de l'application.
+                </div>
+                
+                <form method="POST" id="debugForm" onsubmit="return confirmAction(this);">
+                    <div class="d-grid gap-3">
+                        <button type="submit" name="action" value="reset_db" class="btn btn-danger">
+                            <i class="fas fa-database"></i> Réinitialiser la Base de Données
+                        </button>
+                        <button type="submit" name="action" value="create_dummy" class="btn btn-success">
+                            <i class="fas fa-plus-circle"></i> Créer des Données de Test
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmAction(form) {
+    const action = form.querySelector('button[type="submit"]:focus').value;
+    let message = '';
+    
+    if (action === 'reset_db') {
+        message = 'Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible !';
+    } else if (action === 'create_dummy') {
+        message = 'Voulez-vous créer des données de test ? Les données existantes ne seront pas affectées.';
+    }
+    
+    return confirm(message);
+}
+</script>
+{% endblock %}
+
+{% block css %}
+<style>
+.card {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn {
+    padding: 12px 20px;
+    font-size: 1.1rem;
+}
+
+.btn i {
+    margin-right: 8px;
+}
+</style>
+{% endblock %}

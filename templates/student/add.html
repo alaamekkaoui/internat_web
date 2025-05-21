@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter un étudiant{% endblock %}
+
+{% block content %}
+<h2>Ajouter un étudiant</h2>
+
+<form action="{{ url_for('student.add_student') }}" method="POST" enctype="multipart/form-data">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="nom" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="nom" name="nom" required>
+        </div>
+        <div class="col-md-6">
+            <label for="prenom" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="prenom" name="prenom" required>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="matricule" class="form-label">Matricule</label>
+            <input type="text" class="form-control" id="matricule" name="matricule" required>
+        </div>
+        <div class="col-md-6">
+            <label for="cin" class="form-label">CIN</label>
+            <input type="text" class="form-control" id="cin" name="cin">
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="date_naissance" class="form-label">Date de naissance</label>
+            <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
+        </div>
+        <div class="col-md-6">
+            <label for="sexe" class="form-label">Sexe</label>
+            <select class="form-control" id="sexe" name="sexe" required>
+                <option value="M">Homme</option>
+                <option value="F">Femme</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="nationalite" class="form-label">Nationalité</label>
+            <input type="text" class="form-control" id="nationalite" name="nationalite">
+        </div>
+        <div class="col-md-6">
+            <label for="telephone" class="form-label">Numéro de téléphone</label>
+            <input type="tel" class="form-control" id="telephone" name="telephone">
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email">
+        </div>
+        <div class="col-md-6">
+            <label for="annee_universitaire" class="form-label">Année universitaire</label>
+            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" required>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="filiere_id" class="form-label">Filière</label>
+            <select class="form-control" id="filiere_id" name="filiere_id" required>
+                <option value="">Sélectionner une filière</option>
+                {% for filiere in filieres %}
+                    <option value="{{ filiere.id }}">{{ filiere.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="num_chambre" class="form-label">Numéro de chambre</label>
+            <select class="form-control" id="num_chambre" name="num_chambre" required>
+                <option value="">Sélectionner une chambre</option>
+                {% for room in rooms %}
+                    <option value="{{ room.room_number }}">{{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="dossier_medicale" class="form-label">Dossier médical</label>
+            <input type="text" class="form-control" id="dossier_medicale" name="dossier_medicale">
+        </div>
+        <div class="col-md-6">
+            <label for="laureat" class="form-label">Laureat</label>
+            <select class="form-control" id="laureat" name="laureat">
+                <option value="non">Non</option>
+                <option value="oui">Oui</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="mobilite" class="form-label">Mobilité</label>
+            <select class="form-control" id="mobilite" name="mobilite">
+                <option value="non">Non</option>
+                <option value="oui">Oui</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label for="vie_associative" class="form-label">Vie associative</label>
+            <select class="form-control" id="vie_associative" name="vie_associative">
+                <option value="non">Non</option>
+                <option value="oui">Oui</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="bourse" class="form-label">Bourse</label>
+            <select class="form-control" id="bourse" name="bourse">
+                <option value="non">Non</option>
+                <option value="oui">Oui</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="photo" class="form-label">Photo</label>
+            <input type="file" class="form-control" id="photo" name="photo" accept="image/png, image/jpeg, image/gif">
+            <div class="form-text">Formats acceptés: JPG, PNG, GIF. Taille maximale: 5MB</div>
+        </div>
+        <div class="col-md-6">
+            <label for="type_section" class="form-label">Internat</label>
+            <select class="form-select" id="type_section" name="type_section" required>
+                <option value="">Sélectionner...</option>
+                <option value="APESA">APESA</option>
+                <option value="IAV">IAV</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <label for="school_year" class="form-label">Année d'étude</label>
+            <select class="form-control" id="school_year" name="school_year" required>
+                <option value="1ère année">1ère année</option>
+                <option value="2ème année">2ème année</option>
+                <option value="3ème année">3ème année</option>
+                <option value="4ème année">4ème année</option>
+                <option value="5ème année">5ème année</option>
+                <option value="6ème année">6ème année</option>
+                <option value="Doctorat">Doctorat (PhD)</option>
+            </select>
+        </div>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Ajouter</button>
+</form>
+
+{% endblock %}

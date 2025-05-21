@@ -1,0 +1,29 @@
+<!-- templates/room/edit.html -->
+{% extends "base.html" %}
+{% block title %}Modifier une chambre{% endblock %}
+{% block content %}
+<h2>Modifier une chambre</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label for="room_number" class="form-label">Numéro de chambre</label>
+        <input type="text" class="form-control" id="room_number" name="room_number" value="{{ room.room_number }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="pavilion" class="form-label">Pavillon</label>
+        <input type="text" class="form-control" id="pavilion" name="pavilion" value="{{ room.pavilion }}" required>
+    </div>
+    <div class="mb-3">
+        <label for="room_type" class="form-label">Type</label>
+        <select class="form-control" id="room_type" name="room_type" required>
+            <option value="single" {% if room.room_type == 'single' %}selected{% endif %}>Simple</option>
+            <option value="double" {% if room.room_type == 'double' %}selected{% endif %}>Double</option>
+            <option value="triple" {% if room.room_type == 'triple' %}selected{% endif %}>Triple</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label for="capacity" class="form-label">Capacité</label>
+        <input type="number" class="form-control" id="capacity" name="capacity" value="{{ room.capacity }}" min="1" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+</form>
+{% endblock %}

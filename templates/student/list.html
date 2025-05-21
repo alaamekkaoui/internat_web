@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Liste des Étudiants{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <h2 class="mb-0 text-success"><i class="bi bi-people"></i> Liste des Étudiants</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('student.add_student') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Ajouter un étudiant</a>
+        <a href="{{ url_for('student.export_students_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-earmark-pdf"></i> Exporter PDF</a>
+        <a href="{{ url_for('student.export_students_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel"></i> Exporter XLSX</a>
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importStudentModal"><i class="bi bi-file-earmark-arrow-up"></i> Importer XLSX</button>
+    </div>
+</div>
+<form class="row g-2 align-items-end mb-3" method="GET" action="{{ url_for('student.list_students') }}">
+    <div class="col-md-4">
+        <input type="text" class="form-control" name="keyword" placeholder="Nom, Prénom ou Matricule" value="{{ request.args.get('keyword', '') }}">
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" name="chambre" placeholder="Numéro de chambre" value="{{ request.args.get('chambre', '') }}">
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-search"></i> Rechercher</button>
+    </div>
+    <div class="col-md-2">
+        <a href="{{ url_for('student.list_students') }}" class="btn btn-outline-secondary w-100">Réinitialiser</a>
+    </div>
+</form>
+<!-- Import Modal -->
+<div class="modal fade" id="importStudentModal" tabindex="-1" aria-labelledby="importStudentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form action="{{ url_for('student.import_students_xlsx') }}" method="POST" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importStudentModalLabel">Importer des étudiants (XLSX)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="file" class="form-control" name="file" accept=".xlsx" required>
+          </div>
+          <a href="/static/uploads/sample_students.xlsx" download>Télécharger un exemple</a>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Importer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Matricule</th>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Filière</th>
+                <th>Chambre</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.matricule }}</td>
+                <td>{{ student.nom }}</td>
+                <td>{{ student.prenom }}</td>
+                <td>{{ student.filiere_name }}</td>
+                <td>{{ student.num_chambre }}</td>
+                <td>
+                    <div class="btn-group">
+                        <a href="{{ url_for('student.student_profile', student_id=student.id) }}" class="btn btn-sm btn-info text-white" title="Voir le profil">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('student.modify_student', student_id=student.id) }}" class="btn btn-sm btn-success text-white" title="Modifier l'étudiant">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form action="{{ url_for('student.delete_student', student_id=student.id) }}" method="POST" style="display: inline;">
+                            <button type="submit" class="btn btn-sm btn-danger text-white" onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?');" title="Supprimer l'étudiant">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block css %}
+<style>
+.container {
+    font-family: Arial, sans-serif;
+}
+.text-primary {
+    color: #008C4A;
+}
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #f8f9fa;
+}
+.table-success {
+    background-color: #d4edda;
+}
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: black;
+}
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+.form-control {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+}
+.btn {
+    border-radius: 4px;
+}
+.btn-sm {
+    font-size: 0.875rem;
+}
+.table-responsive {
+    margin-top: 20px;
+}
+</style>
+{% endblock %}

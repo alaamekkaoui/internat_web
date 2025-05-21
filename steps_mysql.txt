@@ -1,0 +1,52 @@
+### **Step 1: Set MySQL Root Password**
+
+1. Open **Command Prompt** or **XAMPP Shell**.
+
+2. Log in to MySQL:
+
+   ```bash
+   mysql -u root
+   ```
+
+3. Set the root password:
+
+   ```sql
+   ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'root1234';
+   FLUSH PRIVILEGES;
+   exit;
+   ```
+
+### **Step 2: Configure PhpMyAdmin to Show Login Form**
+
+1. Open the `config.inc.php` file located in your XAMPP folder, typically at:
+
+   ```plaintext
+   C:\xampp\phpMyAdmin\config.inc.php
+   ```
+
+2. Set the following line to enable cookie authentication:
+
+   ```php
+   $cfg['Servers'][$i]['auth_type'] = 'cookie';
+   ```
+
+3. Save and close the file.
+
+### **Step 3: Restart XAMPP Services**
+
+1. Open **XAMPP Control Panel**.
+2. Click **Stop** on both **Apache** and **MySQL** if they are running.
+3. Click **Start** to restart both services.
+
+### **Step 4: Access PhpMyAdmin**
+
+1. Open your browser and go to:
+
+   ```plaintext
+   http://localhost/phpmyadmin
+   ```
+
+2. Log in with:
+
+   * **Username**: `root`
+   * **Password**: `root1234` (the password you set in Step 1).

@@ -1,0 +1,13 @@
+<!-- templates/filiere/edit.html -->
+{% extends "base.html" %}
+{% block title %}Modifier une filière{% endblock %}
+{% block content %}
+<h2>Modifier une filière</h2>
+<form method="POST">
+    <div class="mb-3">
+        <label for="name" class="form-label">Nom de la filière</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ filiere.name }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Modifier</button>
+</form>
+{% endblock %}

@@ -1,0 +1,32 @@
+<!-- templates/filiere/list.html -->
+{% extends "base.html" %}
+{% block title %}Liste des Filières{% endblock %}
+{% block content %}
+<h3 class="text-success"><i class="bi bi-diagram-3"></i> Liste des Filières</h3>
+<a href="/filieres/add" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Ajouter une filière</a>
+<table class="table">
+  <thead class="table-success">
+    <tr>
+      <th>ID</th>
+      <th>Nom</th>
+      <th>Date de création</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for filiere in filieres %}
+    <tr>
+      <td>{{ filiere.id }}</td>
+      <td>{{ filiere.name }}</td>
+      <td>{{ filiere.created_at }}</td>
+      <td>
+        <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
+        <form action="/filieres/{{ filiere.id }}" method="POST" style="display:inline;">
+          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cette filière ?');"><i class="bi bi-trash"></i></button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
