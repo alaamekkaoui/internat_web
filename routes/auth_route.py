@@ -1,37 +1,40 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
 from models.user import User
-# If User class uses generate_password_hash, ensure it's imported if direct hashing is needed here
-# from werkzeug.security import generate_password_hash
 
-auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
+auth_bp = Blueprint('auth', __name__)
+user_model = User()
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role', 'user')  # Default to 'user' if not specified
-
+        role = request.form.get('role', 'user')
+        
+        # Validate required fields
         if not username or not password:
-            flash('Username and password are required.', 'danger')
+            flash('Le nom d\'utilisateur et le mot de passe sont requis', 'error')
             return redirect(url_for('auth.register'))
-
-        existing_user = User.find_by_username(username)
+        
+        # Check if username already exists
+        existing_user = user_model.get_user_by_username(username)
         if existing_user:
-            flash('Username already exists.', 'danger')
+            flash('Ce nom d\'utilisateur est déjà pris', 'error')
             return redirect(url_for('auth.register'))
-
-        user_obj = User()
-        new_user = user_obj.create(username, password, role)
-        if new_user:
-            flash('Registration successful! Please login.', 'success')
+        
+        # Hash password and create user
+        hashed_password = generate_password_hash(password)
+        if user_model.create_user(
+            username=username,
+            password=hashed_password,
+            role=role
+        ):
+            flash('Inscription réussie! Vous pouvez maintenant vous connecter.', 'success')
             return redirect(url_for('auth.login'))
         else:
-            flash('Registration failed. Please try again.', 'danger')
-            return redirect(url_for('auth.register'))
+            flash('Erreur lors de l\'inscription', 'error')
     
-    if 'user_id' in session:  # If already logged in, redirect to home
-        return redirect(url_for('index'))
     return render_template('auth/register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -39,30 +42,26 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-
+        
         if not username or not password:
-            flash('Username and password are required.', 'danger')
+            flash('Le nom d\'utilisateur et le mot de passe sont requis', 'error')
             return redirect(url_for('auth.login'))
-
-        user = User.find_by_username(username)
-        if user and user.verify_password(password):
-            session['user_id'] = user.id
-            session['username'] = user.username
-            session['role'] = user.role
-            flash('Login successful!', 'success')
-            return redirect(url_for('index'))  # Or a dashboard page
+        
+        user = user_model.get_user_by_username(username)
+        
+        if user and check_password_hash(user['password'], password):
+            session['user_id'] = user['id']
+            session['username'] = user['username']
+            session['role'] = user['role']
+            flash('Connexion réussie!', 'success')
+            return redirect(url_for('home.index'))
         else:
-            flash('Invalid username or password.', 'danger')
-            return redirect(url_for('auth.login'))
-
-    if 'user_id' in session:  # If already logged in, redirect to home
-        return redirect(url_for('index'))
+            flash('Nom d\'utilisateur ou mot de passe incorrect', 'error')
+    
     return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
 def logout():
-    session.pop('user_id', None)
-    session.pop('username', None)
-    session.pop('role', None)
-    flash('You have been logged out.', 'info')
+    session.clear()
+    flash('Vous avez été déconnecté', 'info')
     return redirect(url_for('auth.login'))

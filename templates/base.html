@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Internat{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <link rel="icon" type="image/png" href="/static/images/iav.png">
     <style>
         html, body {
@@ -21,25 +21,40 @@
         }
         .navbar {
             background-color: transparent;
-            box-shadow: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
-        .navbar .navbar-brand {
-            color: black;
-        }
-        .navbar-dark .navbar-nav .nav-link {
-            color: black;
-            transition: color 0.2s, border-bottom 0.2s;
-            border-bottom: 2px solid transparent;
-        }
-        .navbar-dark .navbar-nav .nav-link:hover {
-            color: #145A32;
-            border-bottom: 2px solid #145A32;
-            text-decoration: underline;
-        }
-        .navbar-dark .navbar-nav .nav-link.active-link {
+        .navbar-brand {
             color: #145A32 !important;
-            border-bottom: 2px solid #145A32;
             font-weight: 600;
+        }
+        .nav-link {
+            color: #145A32 !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            color: #A7C636 !important;
+            transform: translateY(-1px);
+        }
+        .active {
+            color: #A7C636 !important;
+            font-weight: 600;
+        }
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .dropdown-item {
+            color: #145A32;
+            font-weight: 500;
+            padding: 8px 20px;
+        }
+        .dropdown-item:hover {
+            background-color: rgba(20, 90, 50, 0.1);
+            color: #145A32;
         }
         footer {
             background-color: #A7C636;
@@ -57,11 +72,12 @@
             color: #E10600;
         }
     </style>
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-light mb-4">
         <div class="container">
-            <a class="navbar-brand" href="/">
+            <a class="navbar-brand" href="{{ url_for('home.home') }}">
                 <img src="/static/images/iav.png" alt="Logo IAV" width="40" class="me-2">
                 IAV HASSAN II
             </a>
@@ -69,53 +85,97 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link{% if request.path.startswith('/students') %} active-link{% endif %}" href="/students">Liste des étudiants</a></li>
-                    <li class="nav-item"><a class="nav-link{% if request.path.startswith('/filieres') %} active-link{% endif %}" href="/filieres">Liste des filières</a></li>
-                    <li class="nav-item"><a class="nav-link{% if request.path.startswith('/rooms') %} active-link{% endif %}" href="/rooms">Liste des chambres</a></li>
-                    {% if session.user_id %}
-                        {% if session.role == 'admin' %}
-                            <li class="nav-item">
-                                <a class="nav-link{% if request.path == '/debug' %} active-link{% endif %}" href="/debug">
-                                    <i class="bi bi-bug"></i> Debug
-                                </a>
-                            </li>
-                        {% endif %}
-                        <li class="nav-item">
-                            <span class="nav-link">Welcome, {{ session.username }} ({{ session.role }})</span>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link{% if request.path == url_for('auth.login') %} active-link{% endif %}" href="{{ url_for('auth.login') }}">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link{% if request.path == url_for('auth.register') %} active-link{% endif %}" href="{{ url_for('auth.register') }}">Register</a>
-                        </li>
+                {% if session.get('user_id') %}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'home.home' %}active{% endif %}" 
+                           href="{{ url_for('home.home') }}">
+                            <i class="bi bi-house-door"></i> Accueil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'student.list_students' %}active{% endif %}" 
+                           href="{{ url_for('student.list_students') }}">
+                            <i class="bi bi-people"></i> Étudiants
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'filiere.list_filieres' %}active{% endif %}" 
+                           href="{{ url_for('filiere.list_filieres') }}">
+                            <i class="bi bi-book"></i> Filières
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'room.list_rooms' %}active{% endif %}" 
+                           href="{{ url_for('room.list_rooms') }}">
+                            <i class="bi bi-house"></i> Chambres
+                        </a>
+                    </li>
+                    {% if session.get('role') == 'admin' %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'user.list_users' %}active{% endif %}" 
+                           href="{{ url_for('user.list_users') }}">
+                            <i class="bi bi-person-gear"></i> Utilisateurs
+                        </a>
+                    </li>
                     {% endif %}
                 </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
+                           data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ session.get('username') }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('user.profile') }}">
+                                    <i class="bi bi-person"></i> Profil
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Déconnexion
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'auth.login' %}active{% endif %}" 
+                           href="{{ url_for('auth.login') }}">
+                            <i class="bi bi-box-arrow-in-right"></i> Connexion
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'auth.register' %}active{% endif %}" 
+                           href="{{ url_for('auth.register') }}">
+                            <i class="bi bi-person-plus"></i> Inscription
+                        </a>
+                    </li>
+                </ul>
+                {% endif %}
             </div>
         </div>
     </nav>
-    <div class="container my-4 content-wrapper">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container">
                 {% for category, message in messages %}
-                    <div class="alert 
-                        {% if category == 'success' %}alert-success
-                        {% elif category == 'danger' %}alert-danger
-                        {% elif category == 'warning' %}alert-warning
-                        {% else %}alert-info{% endif %}
-                        alert-dismissible fade show" role="alert">
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
                         {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-        {% if request.path != '/' %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="container my-4 content-wrapper">
+        {% if request.path != '/' and session.get('user_id') %}
         <button type="button" class="btn btn-outline-secondary mb-3" onclick="window.history.back()">
             <i class="bi bi-arrow-left"></i> Retour
         </button>
@@ -127,6 +187,7 @@
             &copy; {{ 2024 }} IAV HASSAN II. Tous droits réservés.
         </div>
     </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -5,7 +5,34 @@
 {% block content %}
 <div class="container">
     <h1 class="text-center mb-5">Tableau de Bord</h1>
-    
+     <!-- Quick Stats Row -->
+     <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Statistiques Rapides</h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Chambres Occupées</h6>
+                            <p class="h3">{{ occupied_rooms }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Chambres Libres</h6>
+                            <p class="h3">{{ available_rooms }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Étudiants IAV</h6>
+                            <p class="h3">{{ iav_students }}</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h6 class="text-muted">Étudiants APESA</h6>
+                            <p class="h3">{{ apesa_students }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row g-4">
         <!-- Students Card -->
         <div class="col-md-4">
@@ -17,7 +44,7 @@
                     <h5 class="card-title">Étudiants</h5>
                     <p class="display-4 mb-0">{{ total_students }}</p>
                     <p class="text-muted">étudiants inscrits</p>
-                    <a href="/students" class="btn btn-outline-primary mt-3">
+                    <a href="{{ url_for('student.list_students') }}" class="btn btn-outline-primary mt-3">
                         <i class="bi bi-arrow-right"></i> Voir la liste
                     </a>
                 </div>
@@ -34,7 +61,7 @@
                     <h5 class="card-title">Filières</h5>
                     <p class="display-4 mb-0">{{ total_filieres }}</p>
                     <p class="text-muted">filières disponibles</p>
-                    <a href="/filieres" class="btn btn-outline-success mt-3">
+                    <a href="{{ url_for('filiere.list_filieres') }}" class="btn btn-outline-success mt-3">
                         <i class="bi bi-arrow-right"></i> Voir la liste
                     </a>
                 </div>
@@ -51,7 +78,7 @@
                     <h5 class="card-title">Chambres</h5>
                     <p class="display-4 mb-0">{{ total_rooms }}</p>
                     <p class="text-muted">chambres disponibles</p>
-                    <a href="/rooms" class="btn btn-outline-warning mt-3">
+                    <a href="{{ url_for('room.list_rooms') }}" class="btn btn-outline-warning mt-3">
                         <i class="bi bi-arrow-right"></i> Voir la liste
                     </a>
                 </div>
@@ -59,34 +86,7 @@
         </div>
     </div>
 
-    <!-- Quick Stats Row -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Statistiques Rapides</h5>
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <h6 class="text-muted">Chambres Occupées</h6>
-                            <p class="h3">{{ occupied_rooms }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h6 class="text-muted">Chambres Libres</h6>
-                            <p class="h3">{{ available_rooms }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h6 class="text-muted">Étudiants Internes</h6>
-                            <p class="h3">{{ internal_students }}</p>
-                        </div>
-                        <div class="col-md-3">
-                            <h6 class="text-muted">Étudiants Externes</h6>
-                            <p class="h3">{{ external_students }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+   
 </div>
 
 <style>

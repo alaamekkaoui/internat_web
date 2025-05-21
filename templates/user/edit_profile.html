@@ -1,45 +1,37 @@
 {% extends "base.html" %}
 
-{% block title %}Inscription - Internat{% endblock %}
+{% block title %}Modifier le profil - Internat{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
                         <div class="display-1 mb-3">
-                            <i class="bi bi-person-plus text-primary"></i>
+                            <i class="bi bi-person-gear text-primary"></i>
                         </div>
-                        <h2>Inscription</h2>
+                        <h2>Modifier le profil</h2>
                     </div>
 
-                    <form method="POST" action="{{ url_for('auth.register') }}">
+                    <form method="POST" action="{{ url_for('user.edit_profile') }}">
                         <div class="mb-4">
                             <label for="username" class="form-label">Nom d'utilisateur</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="password" class="form-label">Mot de passe</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="text" class="form-control" id="username" value="{{ user.username }}" disabled>
                         </div>
 
                         <div class="mb-4">
                             <label for="role" class="form-label">Rôle</label>
-                            <select class="form-select" id="role" name="role" required>
-                                <option value="user">Utilisateur</option>
-                                <option value="admin">Administrateur</option>
-                            </select>
+                            <input type="text" class="form-control" id="role" value="{{ user.role }}" disabled>
                         </div>
 
-                        <div class="d-grid gap-2">
+                        <div class="d-flex justify-content-center gap-3">
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-person-plus"></i> S'inscrire
+                                <i class="bi bi-check-lg"></i> Enregistrer
                             </button>
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-box-arrow-in-right"></i> Déjà inscrit ? Se connecter
+                            <a href="{{ url_for('user.profile') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-lg"></i> Annuler
                             </a>
                         </div>
                     </form>
@@ -84,15 +76,9 @@
     font-size: 4rem;
 }
 
-.form-select {
-    border-radius: 10px;
-    padding: 10px;
-    border: 1px solid #dee2e6;
-}
-
-.form-select:focus {
-    border-color: #145A32;
-    box-shadow: 0 0 0 0.2rem rgba(20, 90, 50, 0.25);
+.form-control:disabled {
+    background-color: #f8f9fa;
+    cursor: not-allowed;
 }
 </style>
 {% endblock %} 

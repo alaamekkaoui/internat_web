@@ -1,84 +1,222 @@
-import pymysql
+import sqlite3
+from werkzeug.security import generate_password_hash
 from database.db import get_connection
-from werkzeug.security import generate_password_hash, check_password_hash
+
+def dict_factory(cursor, row):
+    """Convert database row objects to a dictionary"""
+    fields = [column[0] for column in cursor.description]
+    return {key: value for key, value in zip(fields, row)}
 
 class User:
-    def __init__(self, id=None, username=None, password=None, role=None):
-        self.id = id
-        self.username = username
-        self.password = password
-        self.role = role
-        self.conn = get_connection()
-        self.cursor = self.conn.cursor()
+    def __init__(self):
+        self.table_name = 'users'
 
-    def create(self, username, password, role='user'):
-        self.username = username
-        self.password = generate_password_hash(password)
-        self.role = role
+    def create_table(self):
         try:
-            self.cursor.execute(
-                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
-                (self.username, self.password, self.role)
-            )
-            self.conn.commit()
-            self.id = self.cursor.lastrowid
-            return self
-        except pymysql.Error as e:
-            print(f"Error creating user: {e}")
-            self.conn.rollback()
-            return None
+            print("DEBUG: Creating users table")
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Drop existing table to ensure clean state
+            cursor.execute('DROP TABLE IF EXISTS users')
+            
+            # Create table with correct structure
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'user',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            conn.commit()
+            
+            # Verify table structure
+            cursor.execute("PRAGMA table_info(users)")
+            columns = cursor.fetchall()
+            print("DEBUG: Table structure:", columns)
+            
+            conn.close()
+            print("DEBUG: Table created successfully")
+        except Exception as e:
+            print(f"DEBUG: Error creating table: {str(e)}")
+            raise e
 
-    @staticmethod
-    def find_by_username(username):
-        conn = get_connection()
-        cursor = conn.cursor()
+    def get_user_by_username(self, username):
         try:
-            cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
-            user_data = cursor.fetchone()
-            if user_data:
-                # Ensure all expected keys are present
-                expected_keys = ['id', 'username', 'password', 'role']
-                if all(key in user_data for key in expected_keys):
-                    return User(id=user_data['id'], username=user_data['username'], password=user_data['password'], role=user_data['role'])
-                else:
-                    print(f"User data for {username} is missing keys: {user_data}")
-                    return None
-            return None
-        except pymysql.Error as e:
-            print(f"Error finding user by username: {e}")
+            print(f"DEBUG: Getting user by username: {username}")
+            conn = get_connection()
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+            query = 'SELECT * FROM users WHERE username = ?'
+            params = (username,)
+            print(f"DEBUG: Query: {query}")
+            print(f"DEBUG: Params: {params}")
+            cursor.execute(query, params)
+            user = cursor.fetchone()
+            print(f"DEBUG: Result: {user}")
+            return user
+        except Exception as e:
+            print(f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
             return None
         finally:
-            cursor.close()
             conn.close()
 
-    @staticmethod
-    def find_by_id(user_id):
-        conn = get_connection()
-        cursor = conn.cursor()
+    def get_user_by_id(self, user_id):
         try:
-            cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-            user_data = cursor.fetchone()
-            if user_data:
-                 # Ensure all expected keys are present
-                expected_keys = ['id', 'username', 'password', 'role']
-                if all(key in user_data for key in expected_keys):
-                    return User(id=user_data['id'], username=user_data['username'], password=user_data['password'], role=user_data['role'])
-                else:
-                    print(f"User data for id {user_id} is missing keys: {user_data}")
-                    return None
-            return None
-        except pymysql.Error as e:
-            print(f"Error finding user by id: {e}")
+            print(f"DEBUG: Getting user by id: {user_id}")
+            conn = get_connection()
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+            query = 'SELECT * FROM users WHERE id = ?'
+            params = (user_id,)
+            print(f"DEBUG: Query: {query}")
+            print(f"DEBUG: Params: {params}")
+            cursor.execute(query, params)
+            user = cursor.fetchone()
+            print(f"DEBUG: Result: {user}")
+            return user
+        except Exception as e:
+            print(f"Erreur lors de la récupération de l'utilisateur: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
             return None
         finally:
-            cursor.close()
             conn.close()
 
-    def verify_password(self, password):
-        return check_password_hash(self.password, password)
+    def create_user(self, username, password, role='user'):
+        try:
+            print(f"DEBUG: Creating user with username: {username}, role: {role}")
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Verify table structure before insert
+            cursor.execute("PRAGMA table_info(users)")
+            columns = cursor.fetchall()
+            print("DEBUG: Current table structure:", columns)
+            
+            query = 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)'
+            params = (username, password, role)
+            print(f"DEBUG: Query: {query}")
+            print(f"DEBUG: Params: {params}")
+            
+            cursor.execute(query, params)
+            conn.commit()
+            print("DEBUG: User created successfully")
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la création de l'utilisateur: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return False
+        finally:
+            conn.close()
 
-    def __del__(self):
-        if hasattr(self, 'cursor') and self.cursor:
-            self.cursor.close()
-        if hasattr(self, 'conn') and self.conn:
-            self.conn.close()
+    def update_password(self, user_id, new_password):
+        try:
+            print(f"DEBUG: Updating password for user_id: {user_id}")
+            conn = get_connection()
+            cursor = conn.cursor()
+            query = 'UPDATE users SET password = ? WHERE id = ?'
+            params = (new_password, user_id)
+            print(f"DEBUG: Query: {query}")
+            print(f"DEBUG: Params: {params}")
+            cursor.execute(query, params)
+            conn.commit()
+            print("DEBUG: Password updated successfully")
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la mise à jour du mot de passe: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return False
+        finally:
+            conn.close()
+
+    def update_user(self, user_id, role=None):
+        try:
+            print(f"DEBUG: Updating user {user_id} with role: {role}")
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            if role is not None:
+                query = 'UPDATE users SET role = ? WHERE id = ?'
+                params = (role, user_id)
+                print(f"DEBUG: Query: {query}")
+                print(f"DEBUG: Params: {params}")
+                cursor.execute(query, params)
+                conn.commit()
+                print("DEBUG: User updated successfully")
+                return True
+            return False
+        except Exception as e:
+            print(f"Erreur lors de la mise à jour de l'utilisateur: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return False
+        finally:
+            conn.close()
+
+    def delete_user(self, user_id):
+        try:
+            print(f"DEBUG: Deleting user {user_id}")
+            conn = get_connection()
+            cursor = conn.cursor()
+            query = 'DELETE FROM users WHERE id = ?'
+            params = (user_id,)
+            print(f"DEBUG: Query: {query}")
+            print(f"DEBUG: Params: {params}")
+            cursor.execute(query, params)
+            conn.commit()
+            print("DEBUG: User deleted successfully")
+            return True
+        except Exception as e:
+            print(f"Erreur lors de la suppression de l'utilisateur: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return False
+        finally:
+            conn.close()
+
+    def get_all_users(self):
+        try:
+            print("DEBUG: Getting all users")
+            conn = get_connection()
+            conn.row_factory = dict_factory
+            cursor = conn.cursor()
+            query = 'SELECT * FROM users'
+            print(f"DEBUG: Query: {query}")
+            cursor.execute(query)
+            users = cursor.fetchall()
+            print(f"DEBUG: Found {len(users)} users")
+            return users
+        except Exception as e:
+            print(f"Erreur lors de la récupération des utilisateurs: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return []
+        finally:
+            conn.close()
+
+    def create_default_admin(self):
+        """Create a default admin user if no users exist"""
+        try:
+            print("DEBUG: Checking if default admin needs to be created")
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) FROM users')
+            count = cursor.fetchone()[0]
+            conn.close()
+            print(f"DEBUG: Found {count} existing users")
+
+            if count == 0:
+                print("DEBUG: Creating default admin user")
+                hashed_password = generate_password_hash('admin123')
+                result = self.create_user(
+                    username='admin',
+                    password=hashed_password,
+                    role='admin'
+                )
+                print(f"DEBUG: Default admin creation result: {result}")
+                return result
+            return False
+        except Exception as e:
+            print(f"Erreur lors de la création de l'admin par défaut: {str(e)}")
+            print(f"DEBUG: Error type: {type(e)}")
+            return False

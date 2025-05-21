@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Profil - Internat{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <div class="display-1 mb-3">
+                            <i class="bi bi-person-circle text-primary"></i>
+                        </div>
+                        <h2>Profil Utilisateur</h2>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-2">Nom d'utilisateur</h5>
+                            <p class="h4">{{ user.username }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-2">Rôle</h5>
+                            <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %} fs-6">
+                                {{ user.role }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5 class="text-muted mb-2">Date d'inscription</h5>
+                            <p class="h4">{{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <a href="{{ url_for('user.edit_profile') }}" class="btn btn-primary">
+                            <i class="bi bi-pencil"></i> Modifier le profil
+                        </a>
+                        <a href="{{ url_for('user.change_password') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-key"></i> Changer le mot de passe
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.text-primary {
+    color: #145A32 !important;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 8px 12px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+}
+
+.btn-primary {
+    background-color: #145A32;
+    border-color: #145A32;
+}
+
+.btn-primary:hover {
+    background-color: #0F4C2A;
+    border-color: #0F4C2A;
+}
+
+.btn-outline-primary {
+    color: #145A32;
+    border-color: #145A32;
+}
+
+.btn-outline-primary:hover {
+    background-color: #145A32;
+    border-color: #145A32;
+}
+
+.display-1 {
+    font-size: 4rem;
+}
+</style>
+{% endblock %} 
