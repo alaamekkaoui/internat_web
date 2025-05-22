@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session
+from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session, send_file
 from routes.student_route import student_bp
 from routes.room_route import room_bp
 from routes.filiere_route import filiere_bp
@@ -6,11 +6,19 @@ from routes.auth_route import auth_bp
 from routes.user_route import user_bp
 from routes.home_route import home_bp
 from database.setup import ensure_database_and_tables, reset_database
-from database.db import check_connection
+from database.db import check_connection, get_connection
 from models import create_dummy_data
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os 
+from werkzeug.utils import secure_filename
+from controllers.student_controller import StudentController
+from controllers.room_controller import RoomController
+from controllers.filiere_controller import FiliereController
+from controllers.user_controller import UserController
+from utilities.file_utils import handle_file_upload
+from utilities.pdf_utils import generate_student_pdf
+import tempfile
 
 # Load environment variables
 load_dotenv()
@@ -19,7 +27,7 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
 
-# Set default academic year in app config
+# Set academic year based on current year
 current_year = datetime.now().year
 next_year = current_year + 1
 app.config['CURRENT_ACADEMIC_YEAR'] = f"{current_year}/{next_year}"
@@ -112,7 +120,6 @@ def debug_filiere():
 
 @app.route('/debug/user')
 def debug_user():
-    from controllers.user_controller import UserController
     users = UserController().list_users()
     return render_template('user/list.html', users=users)
 
@@ -122,7 +129,6 @@ def update_annee_universitaire():
     if not new_year:
         flash('Veuillez fournir une nouvelle année universitaire.', 'danger')
         return redirect(url_for('index'))
-    from database.db import get_connection
     conn = get_connection()
     cursor = conn.cursor()
     try:
@@ -143,7 +149,5 @@ def update_annee_universitaire():
 def page_not_found(e):
     return render_template('404.html'), 404
 
-# 
-
 if __name__ == '__main__':
-    app.run(port=5000, host='0.0.0.0', debug=True)
+    app.run(debug=True)

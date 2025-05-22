@@ -7,6 +7,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from datetime import datetime
+import tempfile
 
 def export_pdf(data, pdf_path):
     """Generate a PDF file with student data and IAV logo."""
@@ -98,4 +99,125 @@ def save_pdf(pdf_folder, filename, pdf_stream):
     pdf_path = os.path.join(pdf_folder, filename)
     with open(pdf_path, 'wb') as f:
         f.write(pdf_stream.read())
+    return pdf_path
+
+def generate_student_pdf(student):
+    """Generate a PDF file for student profile"""
+    # Create a temporary file
+    temp_dir = tempfile.gettempdir()
+    pdf_path = os.path.join(temp_dir, f"student_profile_{student['id']}.pdf")
+    
+    # Create the PDF document
+    doc = SimpleDocTemplate(
+        pdf_path,
+        pagesize=letter,
+        rightMargin=72,
+        leftMargin=72,
+        topMargin=72,
+        bottomMargin=72
+    )
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Add IAV logo at the top
+    logo_path = os.path.join(os.path.dirname(__file__), '../static/images/iav.png')
+    if os.path.exists(logo_path):
+        img = Image(logo_path, width=1.5*inch, height=1.5*inch)
+        img.hAlign = 'CENTER'
+        elements.append(img)
+        elements.append(Spacer(1, 12))
+    
+    # Add title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        alignment=1  # Center alignment
+    )
+    elements.append(Paragraph(f"Profil de l'étudiant", title_style))
+    elements.append(Spacer(1, 20))
+    
+    # Add student photo if exists
+    if student.get('photo'):
+        photo_path = os.path.join('static', 'uploads', student['photo'])
+        if os.path.exists(photo_path):
+            img = Image(photo_path, width=2*inch, height=2*inch)
+            img.hAlign = 'CENTER'
+            elements.append(img)
+            elements.append(Spacer(1, 20))
+    
+    # Add student name and matricule
+    name_style = ParagraphStyle(
+        'NameStyle',
+        parent=styles['Heading2'],
+        fontSize=18,
+        spaceAfter=10,
+        alignment=1
+    )
+    elements.append(Paragraph(f"{student['prenom']} {student['nom']}", name_style))
+    elements.append(Paragraph(f"Matricule: {student['matricule']}", styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Personal Information
+    elements.append(Paragraph("Informations personnelles", styles['Heading2']))
+    personal_data = [
+        ['Nom:', student['nom']],
+        ['Prénom:', student['prenom']],
+        ['CIN:', student['cin']],
+        ['Sexe:', student['sexe']],
+        ['Date de naissance:', student['date_naissance']],
+        ['Nationalité:', student['nationalite']]
+    ]
+    
+    # Academic Information
+    elements.append(Spacer(1, 20))
+    elements.append(Paragraph("Informations académiques", styles['Heading2']))
+    academic_data = [
+        ['Filière:', student.get('filiere_name', 'Non spécifiée')],
+        ['Année universitaire:', student['annee_universitaire']],
+        ['Chambre:', student['num_chambre'] if student['num_chambre'] not in [None, '', 'no room'] else 'Aucune'],
+        ['Internat:', student['type_section']],
+        ['Mobilité:', student['mobilite']],
+        ['Vie associative:', student['vie_associative']],
+        ['Bourse:', student['bourse']]
+    ]
+    
+    # Create tables with improved styling
+    table_style = TableStyle([
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, -1), 12),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+    ])
+    
+    # Add tables to elements
+    elements.append(Table(personal_data, colWidths=[2*inch, 4*inch], style=table_style))
+    elements.append(Spacer(1, 20))
+    elements.append(Table(academic_data, colWidths=[2*inch, 4*inch], style=table_style))
+    
+    # Add footer with date and IAV information
+    elements.append(Spacer(1, 30))
+    footer_style = ParagraphStyle(
+        'FooterStyle',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.grey,
+        alignment=1
+    )
+    elements.append(Paragraph(
+        f"Institut Agronomique et Vétérinaire Hassan II - {datetime.now().strftime('%d/%m/%Y à %H:%M')}",
+        footer_style
+    ))
+    
+    # Build the PDF
+    doc.build(elements)
+    
     return pdf_path

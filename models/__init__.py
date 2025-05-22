@@ -119,22 +119,7 @@ def ensure_database_and_tables():
                 FOREIGN KEY (room_id) REFERENCES rooms(id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ''')
-            try:
-                cursor.execute('''
-                CREATE TABLE IF NOT EXISTS room_history (
-                    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                    student_id BIGINT UNSIGNED NOT NULL,
-                    room_id BIGINT UNSIGNED NOT NULL,
-                    year VARCHAR(16) NOT NULL,
-                    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (student_id) REFERENCES students(id),
-                    FOREIGN KEY (room_id) REFERENCES rooms(id)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-                ''')
-                print("Room history table created successfully!")
-            except Exception as e:
-                print(f"Error creating room_history table: {e}")
-
+            
         # Create users table if not exists
         if 'users' not in existing_tables:
             print("Creating users table...")

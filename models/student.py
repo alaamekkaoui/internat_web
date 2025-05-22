@@ -55,6 +55,7 @@ class Student:
             if not student_data.get(field):
                 raise Exception(f"Le champ {field} est obligatoire.")
 
+        # Calculate academic year based on current year
         current_year = datetime.now().year
         next_year = current_year + 1
         default_academic_year = f"{current_year}/{next_year}"
@@ -90,11 +91,12 @@ class Student:
             self.cursor.execute(query, params)
             self.conn.commit()
             student_id = self.cursor.lastrowid
+            
+            # Update room status if a room is assigned
             if student_data.get('num_chambre'):
-                from models.room_history import RoomHistory
                 from models.room import Room
-                RoomHistory().add_history(student_id, student_data['num_chambre'], year=current_year)
                 Room().set_room_used_status(student_data['num_chambre'])
+                
             return student_id
         except Exception as e:
             print(f"[ERROR] create_student: {e}")
@@ -117,35 +119,44 @@ class Student:
         if student_data.get('num_chambre') == '':
             student_data['num_chambre'] = None
 
-        if not student_data.get('annee_universitaire'):
-            current_year = datetime.now().year
-            student_data['annee_universitaire'] = f"{current_year}/{current_year + 1}"
-
-        query = """
-        UPDATE students SET
-            nom = %s, prenom = %s, matricule = %s, cin = %s,
-            date_naissance = %s, nationalite = %s, sexe = %s,
-            telephone = %s, email = %s, annee_universitaire = %s,
-            filiere_id = %s, dossier_medicale = %s, observation = %s,
-            laureat = %s, num_chambre = %s, mobilite = %s,
-            vie_associative = %s, bourse = %s, photo = %s,
-            type_section = %s WHERE id = %s
-        """
-
-        params = tuple(student_data[k] for k in allowed_fields) + (student_id,)
+        # Calculate academic year based on current year
+        current_year = datetime.now().year
+        next_year = current_year + 1
+        student_data['annee_universitaire'] = f"{current_year}/{next_year}"
 
         try:
             # Get previous room before update
             self.cursor.execute("SELECT num_chambre FROM students WHERE id = %s", (student_id,))
-            prev = self.cursor.fetchone()
+            prev_room = self.cursor.fetchone()
+            prev_room_number = prev_room['num_chambre'] if prev_room and isinstance(prev_room, dict) else None
+
+            query = """
+            UPDATE students SET
+                nom = %s, prenom = %s, matricule = %s, cin = %s,
+                date_naissance = %s, nationalite = %s, sexe = %s,
+                telephone = %s, email = %s, annee_universitaire = %s,
+                filiere_id = %s, dossier_medicale = %s, observation = %s,
+                laureat = %s, num_chambre = %s, mobilite = %s,
+                vie_associative = %s, bourse = %s, photo = %s,
+                type_section = %s WHERE id = %s
+            """
+
+            params = tuple(student_data[k] for k in allowed_fields) + (student_id,)
             self.cursor.execute(query, params)
             self.conn.commit()
-            # After update, recalculate room usage for the new and previous room
+
+            # After update, recalculate room usage for both previous and new room
             from models.room import Room
+            room_model = Room()
+            
+            # Update previous room status if it exists and is different from new room
+            if prev_room_number and prev_room_number != student_data.get('num_chambre'):
+                room_model.set_room_used_status(prev_room_number)
+            
+            # Update new room status if it exists
             if student_data.get('num_chambre'):
-                Room().set_room_used_status(student_data['num_chambre'])
-            if prev and isinstance(prev, dict) and prev.get('num_chambre') and prev.get('num_chambre') != student_data.get('num_chambre'):
-                Room().set_room_used_status(prev['num_chambre'])
+                room_model.set_room_used_status(student_data['num_chambre'])
+            
             return True
         except Exception as e:
             print(f"[ERROR] update_student: {repr(e)} (type: {type(e)})")
@@ -155,15 +166,19 @@ class Student:
 
     def delete_student(self, student_id):
         try:
+            # Get student's room before deletion
             self.cursor.execute("SELECT num_chambre FROM students WHERE id = %s", (student_id,))
-            prev = self.cursor.fetchone()
-            self.cursor.execute("DELETE FROM room_history WHERE student_id = %s", (student_id,))
+            student = self.cursor.fetchone()
+            room_number = student['num_chambre'] if student and isinstance(student, dict) else None
+
+            # Delete the student
             self.cursor.execute("DELETE FROM students WHERE id = %s", (student_id,))
             self.conn.commit()
 
-            if prev and prev['num_chambre']:
+            # Update room status if student had a room
+            if room_number:
                 from models.room import Room
-                Room().set_room_used_status(prev['num_chambre'])
+                Room().set_room_used_status(room_number)
 
             return True
         except Exception as e:

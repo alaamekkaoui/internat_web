@@ -262,22 +262,6 @@ def ensure_database_and_tables():
             ''')
             print("Students table created successfully!")
 
-        # Create room_history table (depends on students and rooms)
-        if 'room_history' not in existing_tables:
-            print("Creating room_history table...")
-            cursor.execute('''
-            CREATE TABLE IF NOT EXISTS room_history (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                student_id BIGINT UNSIGNED NOT NULL,
-                room_id BIGINT UNSIGNED NOT NULL,
-                year VARCHAR(16) NOT NULL,
-                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                FOREIGN KEY (room_id) REFERENCES rooms(id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            ''')
-            print("Room history table created successfully!")
-
         conn.commit()
         print("All tables checked and created successfully!")
         

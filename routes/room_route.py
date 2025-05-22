@@ -18,6 +18,23 @@ def list_rooms():
         flash(str(e), 'danger')
         return render_template('room/list.html', rooms=[])
 
+@room_bp.route('/rooms/<int:room_id>', methods=['GET'])
+def view_room(room_id):
+    try:
+        room = room_controller.get_room(room_id)
+        if not room:
+            flash('Chambre non trouvée', 'danger')
+            return redirect(url_for('room.list_rooms'))
+        
+        # Get students in this room
+        from models.student import Student
+        students = Student().get_students_by_room(room['room_number'])
+        
+        return render_template('room/view.html', room=room, students=students)
+    except Exception as e:
+        flash(str(e), 'danger')
+        return redirect(url_for('room.list_rooms'))
+
 @room_bp.route('/rooms/add', methods=['GET', 'POST'])
 @login_required
 def add_room():

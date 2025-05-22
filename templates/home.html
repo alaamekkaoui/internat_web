@@ -15,33 +15,9 @@
             </span>
             <div class="d-flex align-items-center gap-2 mb-2">
                 <span class="fs-5">Année universitaire : <strong>{{ current_academic_year }}</strong></span>
-                <a href="#update-annee" data-bs-toggle="modal" data-bs-target="#updateAnneeModal" class="text-warning" title="Modifier l'année universitaire">
-                    <i class="bi bi-pencil-square" style="font-size: 1.5rem;"></i>
-                </a>
             </div>
             <p class="lead text-muted">Bienvenue sur la plateforme de gestion des stages de l'IAV Hassan II.</p>
         </div>
-    </div>
-
-    <!-- Modal for updating academic year -->
-    <div class="modal fade" id="updateAnneeModal" tabindex="-1" aria-labelledby="updateAnneeModalLabel" aria-hidden="true">
-      <div class="modal-dialog">
-        <div class="modal-content">
-          <form method="POST" action="{{ url_for('update_annee_universitaire') }}">
-            <div class="modal-header">
-              <h5 class="modal-title" id="updateAnneeModalLabel">Modifier l'année universitaire</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <input type="text" name="annee_universitaire" class="form-control" placeholder="Nouvelle année universitaire" required>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-              <button type="submit" class="btn btn-warning">Mettre à jour</button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
 
     <h1 class="text-center mb-5">Tableau de Bord</h1>

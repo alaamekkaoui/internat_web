@@ -36,7 +36,7 @@ def handle_file_upload(file, upload_dir='uploads', filename_prefix=''):
             print("❌ No selected file")
             return {'success': False, 'error': 'No selected file'}
 
-        # 3. Validate file type
+        # 3. Validate file type and get extension
         allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
         file_ext = os.path.splitext(file.filename)[1].lower().lstrip('.')
         if file_ext not in allowed_extensions:

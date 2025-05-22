@@ -40,19 +40,29 @@ class Room:
                 # Normalize room_type
                 if isinstance(room_type, str):
                     room_type = room_type.strip().lower()
-                if room_type == 'simple':
+                
+                # Strict room type validation
+                if room_type not in ['single', 'double', 'triple']:
+                    raise Exception(f"Type de chambre invalide: {room_type}. Doit être 'single', 'double' ou 'triple'")
+                
+                # Set capacity based on room_type
+                if room_type == 'single':
                     capacity = 1
                 elif room_type == 'double':
                     capacity = 2
                 elif room_type == 'triple':
                     capacity = 3
-                else:
-                    raise Exception(f"Type de chambre inconnu: {room_type}")
+                
+                # Override any provided capacity to match room type
+                data['capacity'] = capacity
+                
                 print(f"add_room called with: {data} (parsed: room_number={room_number}, pavilion={pavilion}, room_type={room_type}, capacity={capacity})")
             else:
                 raise Exception('Invalid data format for room')
-            if not all([room_number, pavilion, room_type, capacity]):
+                
+            if not all([room_number, pavilion, room_type]):
                 raise Exception('Missing required fields')
+                
             query = f"INSERT INTO {self.table_name} (room_number, pavilion, room_type, capacity, is_used) VALUES (%s, %s, %s, %s, 0)"
             print(f"Executing SQL: {query} with values: {room_number}, {pavilion}, {room_type}, {capacity}")
             self.cursor.execute(query, (room_number, pavilion, room_type, capacity))
@@ -70,20 +80,32 @@ class Room:
                 room_number = data.get('room_number')
                 pavilion = data.get('pavilion')
                 room_type = data.get('room_type')
+                
+                # Normalize room_type
+                if isinstance(room_type, str):
+                    room_type = room_type.strip().lower()
+                
+                # Strict room type validation
+                if room_type not in ['single', 'double', 'triple']:
+                    raise Exception(f"Type de chambre invalide: {room_type}. Doit être 'single', 'double' ou 'triple'")
+                
                 # Set capacity based on room_type
-                if room_type == 'simple':
+                if room_type == 'single':
                     capacity = 1
                 elif room_type == 'double':
                     capacity = 2
                 elif room_type == 'triple':
                     capacity = 3
-                else:
-                    raise Exception('Type de chambre inconnu')
+                
+                # Override any provided capacity to match room type
+                data['capacity'] = capacity
                 is_used = data.get('is_used', 0)
             else:
                 raise Exception('Invalid data format for room')
-            if not all([room_number, pavilion, room_type, capacity]):
+                
+            if not all([room_number, pavilion, room_type]):
                 raise Exception('Missing required fields')
+                
             query = f"UPDATE {self.table_name} SET room_number = %s, pavilion = %s, room_type = %s, capacity = %s, is_used = %s WHERE id = %s"
             self.cursor.execute(query, (room_number, pavilion, room_type, capacity, is_used, room_id))
             self.conn.commit()
@@ -113,30 +135,42 @@ class Room:
         return 0
 
     def set_room_used_status(self, room_number):
-        """Update the is_used status of a room based on current student count and capacity."""
-        self.cursor.execute(f"SELECT room_type, capacity FROM {self.table_name} WHERE room_number = %s", (room_number,))
-        room = self.cursor.fetchone()
-        if not room:
-            return False
-        # Support both tuple and dict cursor results
-        if isinstance(room, dict):
-            capacity = room.get('capacity')
-        else:
-            capacity = room[1]
-        # Defensive: ensure capacity is int
+        """Update room's used status based on current student count"""
         try:
-            capacity = int(capacity)
-        except Exception:
-            capacity = 1
-        from database.db import execute_query
-        query = "SELECT COUNT(*) as count FROM students WHERE num_chambre = %s"
-        result = execute_query(query, (room_number,))
-        student_count = result[0]['count'] if isinstance(result, list) and result and 'count' in result[0] else 0
-        is_used = int(student_count) >= int(capacity)
-        update_query = f"UPDATE {self.table_name} SET is_used = %s WHERE room_number = %s"
-        self.cursor.execute(update_query, (is_used, room_number))
-        self.conn.commit()
-        return is_used
+            # Get room details
+            self.cursor.execute("""
+                SELECT r.*, COUNT(s.id) as student_count
+                FROM rooms r
+                LEFT JOIN students s ON r.room_number = s.num_chambre
+                WHERE r.room_number = %s
+                GROUP BY r.room_number
+            """, (room_number,))
+            room = self.cursor.fetchone()
+            
+            if not room:
+                print(f"[ERROR] Room {room_number} not found")
+                return False
+            
+            # Calculate if room is used
+            student_count = room['student_count'] if room['student_count'] is not None else 0
+            capacity = room['capacity']
+            is_used = int(student_count) == int(capacity)
+            
+            # Update room status
+            self.cursor.execute("""
+                UPDATE rooms 
+                SET is_used = %s,
+                    updated_at = NOW()
+                WHERE room_number = %s
+            """, (is_used, room_number))
+            self.conn.commit()
+            
+            print(f"[INFO] Room {room_number} status updated: {is_used} (students: {student_count}/{capacity})")
+            return True
+        except Exception as e:
+            print(f"[ERROR] set_room_used_status: {e}")
+            self.conn.rollback()
+            return False
 
     def get_room_by_student(self, student_id):
         """Get the room number assigned to a student."""
@@ -154,10 +188,17 @@ class Room:
         self.conn.commit()
 
     def get_available_rooms(self):
-        """Return a list of rooms that are not fully used (is_used = 0)."""
+        """Get list of available rooms"""
         try:
-            self.cursor.execute(f"SELECT * FROM {self.table_name} WHERE is_used = 0")
+            self.cursor.execute("""
+                SELECT r.*, COUNT(s.id) as current_students
+                FROM rooms r
+                LEFT JOIN students s ON r.room_number = s.num_chambre
+                GROUP BY r.room_number
+                HAVING current_students < r.capacity OR current_students IS NULL
+                ORDER BY r.room_number
+            """)
             return self.cursor.fetchall()
         except Exception as e:
-            print(f"Error getting available rooms: {e}")
+            print(f"[ERROR] get_available_rooms: {e}")
             return []

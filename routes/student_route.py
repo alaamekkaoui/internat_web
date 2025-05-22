@@ -3,7 +3,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from controllers.student_controller import StudentController
 from utilities.xlsx_utils import export_xlsx, import_xlsx
-from utilities.pdf_utils import export_pdf
+from utilities.pdf_utils import export_pdf, generate_student_pdf
 from utils.decorators import login_required, role_required # Corrected path
 import os
 from datetime import datetime
@@ -196,3 +196,26 @@ def download_pdf(student_id):
         flash('PDF non trouvé pour cet étudiant.', 'danger')
         return redirect(url_for('student.list_students'))
     return export_pdf(pdf_path)
+
+@student_bp.route('/<int:student_id>/export-pdf')
+def export_pdf(student_id):
+    """Export student profile as PDF"""
+    try:
+        student = StudentController().get_student(student_id)
+        if not student:
+            flash('Étudiant non trouvé', 'error')
+            return redirect(url_for('student.list_students'))
+
+        # Generate PDF
+        pdf_path = generate_student_pdf(student)
+        
+        # Send the PDF file
+        return send_file(
+            pdf_path,
+            as_attachment=True,
+            download_name=f"profil_{student['nom']}_{student['prenom']}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Erreur lors de la génération du PDF: {str(e)}', 'error')
+        return redirect(url_for('student.profile', student_id=student_id))
