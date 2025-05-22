@@ -180,7 +180,12 @@ def modify_student(student_id):
     if 'error' in student:
         flash(student['error'], 'danger')
         return redirect(url_for('student.list_students'))
-    return render_template('student/edit.html', student=student, filieres=filieres, rooms=rooms)
+    # Ensure student is an object with attribute access for Jinja
+    class StudentObj(dict):
+        def __getattr__(self, item):
+            return self.get(item)
+    student_obj = StudentObj(student)
+    return render_template('student/edit.html', student=student_obj, filieres=filieres, rooms=rooms)
 
 @student_bp.route('/students/<int:student_id>/download-pdf', methods=['GET'])
 def download_pdf(student_id):

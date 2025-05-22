@@ -55,8 +55,8 @@
                 <p><strong>Nationalité:</strong> {{ student.nationalite }}</p>
                 <p><strong>Date de naissance:</strong> {{ student.date_naissance }}</p>
                 <p><strong>Chambre actuelle:</strong> 
-                    {% if room %}
-                        {{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Capacité: {{ room.capacity }})
+                    {% if student.room %}
+                        {{ student.room.room_number }} ({{ student.room.pavilion }}, {{ student.room.room_type }}, Capacité: {{ student.room.capacity }})
                     {% else %}
                         Aucune
                     {% endif %}
@@ -77,7 +77,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for h in history %}
+        {% for h in student.history %}
         <tr>
             <td>{{ h.year }}</td>
             <td>{{ h.room.room_number if h.room else '' }}</td>

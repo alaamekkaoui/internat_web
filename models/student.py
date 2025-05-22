@@ -34,14 +34,17 @@ class Student:
 
     def get_student_by_id(self, student_id):
         """Get a student by ID"""
-        query = """
-        SELECT s.*, f.name as filiere_name 
-        FROM students s 
-        LEFT JOIN filieres f ON s.filiere_id = f.id 
-        WHERE s.id = %s
-        """
-        result = execute_query(query, (student_id,))
-        return result[0] if result else None
+        try:
+            self.cursor.execute("""
+                SELECT s.*, f.name as filiere_name 
+                FROM students s 
+                LEFT JOIN filieres f ON s.filiere_id = f.id 
+                WHERE s.id = %s
+            """, (student_id,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            print(f"Error getting student by ID: {e}")
+            return None
 
     def create_student(self, student_data):
         """Create a new student"""
@@ -67,6 +70,10 @@ class Student:
             student_data['type_section']
         )
         return execute_query(query, params, fetch=False)
+
+    def add_student(self, student_data):
+        """Alias for create_student for compatibility with controller"""
+        return self.create_student(student_data)
 
     def update_student(self, student_id, student_data):
         """Update a student"""
@@ -157,5 +164,11 @@ class Student:
     def count_gender(self):
         """Count the number of male and female students"""
         query = "SELECT sexe, COUNT(*) as count FROM students GROUP BY sexe"
-        results = execute_query(query)
-        return {row['sexe']: row['count'] for row in results}
+    def get_room_history(self, student_id):
+        """Return a list of room assignments for a student (simple version: just current room and year)."""
+        # This is a placeholder. For real history, you would need a separate table.
+        query = """
+        SELECT annee_universitaire as year, num_chambre FROM students WHERE id = %s
+        """
+        result = execute_query(query, (student_id,))
+        return result if result else []

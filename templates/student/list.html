@@ -64,11 +64,11 @@
         <tbody>
             {% for student in students %}
             <tr>
-                <td>{{ student.matricule }}</td>
-                <td>{{ student.nom }}</td>
-                <td>{{ student.prenom }}</td>
-                <td>{{ student.filiere_name }}</td>
-                <td>{{ student.num_chambre }}</td>
+                <td>{{ student.matricule or '' }}</td>
+                <td>{{ student.nom or '' }}</td>
+                <td>{{ student.prenom or '' }}</td>
+                <td>{{ student.filiere_name or '' }}</td>
+                <td>{{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</td>
                 <td>
                     <div class="btn-group">
                         <a href="{{ url_for('student.student_profile', student_id=student.id) }}" class="btn btn-sm btn-info text-white" title="Voir le profil">

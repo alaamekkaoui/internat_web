@@ -97,12 +97,13 @@
         </div>
         <div class="col-md-6">
             <label for="num_chambre" class="form-label">Numéro de chambre</label>
-            <select class="form-select" id="num_chambre" name="num_chambre" required>
+            <select class="form-select" id="num_chambre" name="num_chambre">
                 <option value="">Sélectionner une chambre</option>
                 {% for room in rooms %}
                     <option value="{{ room.room_number }}" {% if student.num_chambre == room.room_number %}selected{% endif %}>{{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})</option>
                 {% endfor %}
             </select>
+            <div class="form-text">Laissez vide si l'étudiant n'a pas de chambre assignée pour le moment.</div>
         </div>
     </div>
 

@@ -84,3 +84,47 @@ class Room:
             print(f"Error deleting room: {e}")
             self.conn.rollback()
             raise Exception(str(e))
+
+    def get_student_count_in_room(self, room_number):
+        """Return the number of students assigned to a room."""
+        from database.db import execute_query
+        query = "SELECT COUNT(*) as count FROM students WHERE num_chambre = %s"
+        result = execute_query(query, (room_number,))
+        return result[0]['count'] if result else 0
+
+    def set_room_used_status(self, room_number):
+        """Update the is_used status of a room based on current student count and capacity."""
+        # Get room info
+        self.cursor.execute(f"SELECT room_type, capacity FROM {self.table_name} WHERE room_number = %s", (room_number,))
+        room = self.cursor.fetchone()
+        if not room:
+            return False
+        room_type, capacity = room[0], room[1]
+        # Count students assigned to this room
+        from database.db import execute_query
+        query = "SELECT COUNT(*) as count FROM students WHERE num_chambre = %s"
+        result = execute_query(query, (room_number,))
+        student_count = result[0]['count'] if result else 0
+        # Update is_used: True if full, False otherwise
+        is_used = student_count >= capacity
+        update_query = f"UPDATE {self.table_name} SET is_used = %s WHERE room_number = %s"
+        self.cursor.execute(update_query, (is_used, room_number))
+        self.conn.commit()
+        return is_used
+
+    def unassign_student_from_room(self, student_id):
+        """Unassign a student from their room and update room usage status."""
+        # Get the student's current room
+        from database.db import execute_query
+        query = "SELECT num_chambre FROM students WHERE id = %s"
+        result = execute_query(query, (student_id,))
+        if not result or not result[0]['num_chambre']:
+            return False
+        room_number = result[0]['num_chambre']
+        # Unassign the student
+        update_student_query = "UPDATE students SET num_chambre = 'no room' WHERE id = %s"
+        self.cursor.execute(update_student_query, (student_id,))
+        self.conn.commit()
+        # Update room usage
+        self.set_room_used_status(room_number)
+        return True
