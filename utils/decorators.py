@@ -9,9 +9,9 @@ def role_required(allowed_roles):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
-            if 'user_id' not in session:
-                flash('Please log in to access this page.', 'warning')
-                return redirect(url_for('auth.login')) # Assuming 'auth.login' is your login route
+            # if 'user_id' not in session:
+            #     # flash('Please log in to access this page.', 'warning')
+            #     # return redirect(url_for('auth.login')) # Assuming 'auth.login' is your login route
 
             user_role = session.get('role')
             if user_role not in allowed_roles:

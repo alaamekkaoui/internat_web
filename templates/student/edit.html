@@ -63,7 +63,7 @@
     <div class="row mb-3">
         <div class="col-md-6">
             <label for="annee_universitaire" class="form-label">Année universitaire</label>
-            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" value="{{ student.annee_universitaire }}" required>
+            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" value="{{ student.annee_universitaire or current_academic_year }}" required>
         </div>
         <div class="col-md-6">
             <label for="filiere_id" class="form-label">Filière</label>
@@ -98,7 +98,7 @@
         <div class="col-md-6">
             <label for="num_chambre" class="form-label">Numéro de chambre</label>
             <select class="form-select" id="num_chambre" name="num_chambre">
-                <option value="">Sélectionner une chambre</option>
+                <option value="">Aucune</option>
                 {% for room in rooms %}
                     <option value="{{ room.room_number }}" {% if student.num_chambre == room.room_number %}selected{% endif %}>{{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})</option>
                 {% endfor %}

@@ -41,8 +41,7 @@
                     
                     <div class="row mt-3">
                         <div class="col-md-6">
-                            <p><strong>Numéro de chambre:</strong> {{ student.num_chambre }}</p>
-                            <p><strong>Laureat:</strong> {{ student.laureat }}</p>
+                            <p><strong>Numéro de chambre:</strong> {{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</p>
                             <p><strong>Mobilité:</strong> {{ student.mobilite }}</p>
                         </div>
                         <div class="col-md-6">
@@ -67,4 +66,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

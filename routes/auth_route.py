@@ -78,6 +78,7 @@ def login():
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
+            session.permanent = True  # Make session last for configured lifetime
             flash('Connexion réussie!', 'success')
             return redirect(url_for('home.home'))
         else:

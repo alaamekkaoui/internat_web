@@ -9,7 +9,8 @@ import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from utilities.file_utils import handle_file_upload
-
+from controllers.filiere_controller import FiliereController
+from controllers.room_controller import RoomController
 student_bp = Blueprint('student', __name__)
 student_controller = StudentController()
 
@@ -24,8 +25,6 @@ def list_students():
 @student_bp.route('/students/add', methods=['GET', 'POST'])
 @login_required
 def add_student():
-    from controllers.filiere_controller import FiliereController
-    from controllers.room_controller import RoomController
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
     if request.method == 'POST':
@@ -41,10 +40,12 @@ def add_student():
 @student_bp.route('/students/<int:student_id>', methods=['GET'])
 def student_profile(student_id):
     result = student_controller.get_student(student_id)
+    filieres = FiliereController().list_filieres()
+    rooms = RoomController().list_rooms()
     if 'error' in result:
         flash(result['error'], 'danger')
         return redirect(url_for('student.list_students'))
-    return render_template('student/profile.html', student=result)
+    return render_template('student/profile.html', student=result, filieres=filieres, rooms=rooms)
 
 @student_bp.route('/students/<int:student_id>/delete', methods=['POST'])
 @login_required

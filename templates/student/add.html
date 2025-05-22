@@ -60,7 +60,7 @@
         </div>
         <div class="col-md-6">
             <label for="annee_universitaire" class="form-label">Année universitaire</label>
-            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" required>
+            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" value="{{ current_academic_year }}" required>
         </div>
     </div>
     
@@ -77,7 +77,7 @@
         <div class="col-md-6">
             <label for="num_chambre" class="form-label">Numéro de chambre</label>
             <select class="form-control" id="num_chambre" name="num_chambre">
-                <option value="">Sélectionner une chambre</option>
+                <option value="">Aucune</option>
                 {% for room in rooms %}
                     <option value="{{ room.room_number }}">{{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})</option>
                 {% endfor %}

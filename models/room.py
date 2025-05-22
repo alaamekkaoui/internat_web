@@ -37,7 +37,17 @@ class Room:
                 room_number = data.get('room_number')
                 pavilion = data.get('pavilion')
                 room_type = data.get('room_type')
-                capacity = data.get('capacity')
+                # Normalize room_type
+                if isinstance(room_type, str):
+                    room_type = room_type.strip().lower()
+                if room_type == 'simple':
+                    capacity = 1
+                elif room_type == 'double':
+                    capacity = 2
+                elif room_type == 'triple':
+                    capacity = 3
+                else:
+                    raise Exception(f"Type de chambre inconnu: {room_type}")
                 print(f"add_room called with: {data} (parsed: room_number={room_number}, pavilion={pavilion}, room_type={room_type}, capacity={capacity})")
             else:
                 raise Exception('Invalid data format for room')
@@ -60,7 +70,15 @@ class Room:
                 room_number = data.get('room_number')
                 pavilion = data.get('pavilion')
                 room_type = data.get('room_type')
-                capacity = data.get('capacity')
+                # Set capacity based on room_type
+                if room_type == 'simple':
+                    capacity = 1
+                elif room_type == 'double':
+                    capacity = 2
+                elif room_type == 'triple':
+                    capacity = 3
+                else:
+                    raise Exception('Type de chambre inconnu')
                 is_used = data.get('is_used', 0)
             else:
                 raise Exception('Invalid data format for room')
@@ -90,41 +108,56 @@ class Room:
         from database.db import execute_query
         query = "SELECT COUNT(*) as count FROM students WHERE num_chambre = %s"
         result = execute_query(query, (room_number,))
-        return result[0]['count'] if result else 0
+        if isinstance(result, list) and result:
+            return result[0]['count']
+        return 0
 
     def set_room_used_status(self, room_number):
         """Update the is_used status of a room based on current student count and capacity."""
-        # Get room info
         self.cursor.execute(f"SELECT room_type, capacity FROM {self.table_name} WHERE room_number = %s", (room_number,))
         room = self.cursor.fetchone()
         if not room:
             return False
-        room_type, capacity = room[0], room[1]
-        # Count students assigned to this room
+        # Support both tuple and dict cursor results
+        if isinstance(room, dict):
+            capacity = room.get('capacity')
+        else:
+            capacity = room[1]
+        # Defensive: ensure capacity is int
+        try:
+            capacity = int(capacity)
+        except Exception:
+            capacity = 1
         from database.db import execute_query
         query = "SELECT COUNT(*) as count FROM students WHERE num_chambre = %s"
         result = execute_query(query, (room_number,))
-        student_count = result[0]['count'] if result else 0
-        # Update is_used: True if full, False otherwise
-        is_used = student_count >= capacity
+        student_count = result[0]['count'] if isinstance(result, list) and result and 'count' in result[0] else 0
+        is_used = int(student_count) >= int(capacity)
         update_query = f"UPDATE {self.table_name} SET is_used = %s WHERE room_number = %s"
         self.cursor.execute(update_query, (is_used, room_number))
         self.conn.commit()
         return is_used
 
-    def unassign_student_from_room(self, student_id):
-        """Unassign a student from their room and update room usage status."""
-        # Get the student's current room
+    def get_room_by_student(self, student_id):
+        """Get the room number assigned to a student."""
         from database.db import execute_query
         query = "SELECT num_chambre FROM students WHERE id = %s"
         result = execute_query(query, (student_id,))
-        if not result or not result[0]['num_chambre']:
-            return False
-        room_number = result[0]['num_chambre']
-        # Unassign the student
+        if isinstance(result, list) and result and result[0].get('num_chambre'):
+            return result[0]['num_chambre']
+        return None
+
+    def clear_student_room(self, student_id):
+        """Unassign a student from their room."""
         update_student_query = "UPDATE students SET num_chambre = 'no room' WHERE id = %s"
         self.cursor.execute(update_student_query, (student_id,))
         self.conn.commit()
-        # Update room usage
-        self.set_room_used_status(room_number)
-        return True
+
+    def get_available_rooms(self):
+        """Return a list of rooms that are not fully used (is_used = 0)."""
+        try:
+            self.cursor.execute(f"SELECT * FROM {self.table_name} WHERE is_used = 0")
+            return self.cursor.fetchall()
+        except Exception as e:
+            print(f"Error getting available rooms: {e}")
+            return []

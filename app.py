@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, jsonify
+from flask import Flask, request, render_template, redirect, url_for, flash, jsonify, session
 from routes.student_route import student_bp
 from routes.room_route import room_bp
 from routes.filiere_route import filiere_bp
@@ -8,11 +8,21 @@ from routes.home_route import home_bp
 from database.setup import ensure_database_and_tables, reset_database
 from database.db import check_connection
 from models import create_dummy_data
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
 import os 
-from datetime import datetime
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)
+
+# Set default academic year in app config
+current_year = datetime.now().year
+next_year = current_year + 1
+app.config['CURRENT_ACADEMIC_YEAR'] = f"{current_year}/{next_year}"
 
 # Check database connection
 check_connection()
@@ -31,11 +41,11 @@ app.register_blueprint(home_bp)
 # Add context processor for datetime
 @app.context_processor
 def inject_now():
-    return {'now': datetime.now()}
+    return {'now': datetime.now(), 'current_academic_year': app.config.get('CURRENT_ACADEMIC_YEAR')}
 
 @app.route('/')
 def index():
-    return render_template('home.html')
+    return render_template('home.html', current_academic_year=app.config.get('CURRENT_ACADEMIC_YEAR'))
 
 # Debug and utility routes
 @app.route('/debug', methods=['GET', 'POST'])
@@ -105,6 +115,28 @@ def debug_user():
     from controllers.user_controller import UserController
     users = UserController().list_users()
     return render_template('user/list.html', users=users)
+
+@app.route('/update_annee_universitaire', methods=['POST'])
+def update_annee_universitaire():
+    new_year = request.form.get('annee_universitaire')
+    if not new_year:
+        flash('Veuillez fournir une nouvelle année universitaire.', 'danger')
+        return redirect(url_for('index'))
+    from database.db import get_connection
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE students SET annee_universitaire = %s", (new_year,))
+        conn.commit()
+        app.config['CURRENT_ACADEMIC_YEAR'] = new_year  # Update config
+        flash(f"Année universitaire mise à jour pour tous les étudiants: {new_year}", 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erreur lors de la mise à jour: {e}", 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect(url_for('index'))
 
 # 404 error handler
 @app.errorhandler(404)

@@ -4,6 +4,46 @@
 
 {% block content %}
 <div class="container">
+    <div class="row align-items-center mb-5">
+        <div class="col-md-2 text-center mb-3 mb-md-0">
+            <img src="/static/images/iav.png" alt="Logo IAV" class="img-fluid" style="max-width: 90px; border-radius: 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+        </div>
+        <div class="col-md-10">
+            <h1 class="display-4 fw-bold mb-1" style="color: #198754;">Bienvenue, {{ session.get('username', 'Invité') }}</h1>
+            <span class="badge bg-success fs-5 mb-2">
+               Role : {% if session.get('role') == 'admin' %}Admin{% elif session.get('role') == 'teacher' %}Professeur{% elif session.get('role') == 'car' %}Logistique{% else %}Aucun{% endif %}
+            </span>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="fs-5">Année universitaire : <strong>{{ current_academic_year }}</strong></span>
+                <a href="#update-annee" data-bs-toggle="modal" data-bs-target="#updateAnneeModal" class="text-warning" title="Modifier l'année universitaire">
+                    <i class="bi bi-pencil-square" style="font-size: 1.5rem;"></i>
+                </a>
+            </div>
+            <p class="lead text-muted">Bienvenue sur la plateforme de gestion des stages de l'IAV Hassan II.</p>
+        </div>
+    </div>
+
+    <!-- Modal for updating academic year -->
+    <div class="modal fade" id="updateAnneeModal" tabindex="-1" aria-labelledby="updateAnneeModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="POST" action="{{ url_for('update_annee_universitaire') }}">
+            <div class="modal-header">
+              <h5 class="modal-title" id="updateAnneeModalLabel">Modifier l'année universitaire</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <input type="text" name="annee_universitaire" class="form-control" placeholder="Nouvelle année universitaire" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-warning">Mettre à jour</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <h1 class="text-center mb-5">Tableau de Bord</h1>
      <!-- Quick Stats Row -->
      <div class="row mt-5">
