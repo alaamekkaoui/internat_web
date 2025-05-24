@@ -1,28 +1,37 @@
-from flask import Blueprint, render_template
-from models import Student, Filiere, Room
+from flask import Blueprint, render_template, request, flash, redirect, url_for
+from controllers.home_controller import HomeController
 from utils.auth import login_required
+from database.db import get_connection
+from flask import current_app
 
 home_bp = Blueprint('home', __name__)
+home_controller = HomeController()
 
 @home_bp.route('/')
 @login_required
 def home():
-    # Get total counts
-    total_students = Student().get_all_students()
-    total_filieres = Filiere().get_all_filieres()
-    total_rooms = Room().get_all_rooms()
-    
-    # Calculate statistics
-    occupied_rooms = len([room for room in total_rooms if room['is_used']])
-    available_rooms = len([room for room in total_rooms if not room['is_used']])
-    iav_students = len([student for student in total_students if student['type_section'] == 'IAV'])
-    apesa_students = len([student for student in total_students if student['type_section'] == 'APESA'])
-    
-    return render_template('home.html',
-                         total_students=len(total_students),
-                         total_filieres=len(total_filieres),
-                         total_rooms=len(total_rooms),
-                         occupied_rooms=occupied_rooms,
-                         available_rooms=available_rooms,
-                         iav_students=iav_students,
-                         apesa_students=apesa_students) 
+    print('home_route.home called')
+    stats = home_controller.get_dashboard_stats()
+    return render_template('home.html', **stats)
+
+@home_bp.route('/update_annee_universitaire', methods=['POST'])
+def update_annee_universitaire():
+    print('home_route.update_annee_universitaire called')
+    new_year = request.form.get('annee_universitaire')
+    if not new_year:
+        flash('Veuillez fournir une nouvelle année universitaire.', 'danger')
+        return redirect(url_for('home.home'))
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE students SET annee_universitaire = %s", (new_year,))
+        conn.commit()
+        current_app.config['CURRENT_ACADEMIC_YEAR'] = new_year
+        flash(f"Année universitaire mise à jour pour tous les étudiants: {new_year}", 'success')
+    except Exception as e:
+        conn.rollback()
+        flash(f"Erreur lors de la mise à jour: {e}", 'danger')
+    finally:
+        cursor.close()
+        conn.close()
+    return redirect(url_for('home.home'))

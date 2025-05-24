@@ -60,7 +60,7 @@ def register():
         else:
             flash('Erreur lors de l\'inscription', 'error')
     
-    return render_template('auth/register.html')
+    return render_template('user/register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -84,7 +84,7 @@ def login():
         else:
             flash('Nom d\'utilisateur ou mot de passe incorrect', 'error')
     
-    return render_template('auth/login.html')
+    return render_template('user/login.html')
 
 @auth_bp.route('/logout')
 def logout():

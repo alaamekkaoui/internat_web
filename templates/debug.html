@@ -1,80 +1,45 @@
-{% extends "base.html" %}
+{% extends 'base.html' %}
 
-{% block title %}Debug Page{% endblock %}
+{% block title %}Debug Menu{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">Debug Page</h1>
-    
+<div class="container mt-5">
+    <h1 class="mb-4">Debug Menu</h1>
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-8 col-lg-6 mx-auto">
             <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Database Operations</h5>
-                </div>
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('debug_page') }}" class="mb-3">
-                        <div class="d-grid gap-2">
-                            <button type="submit" name="action" value="reset_db" class="btn btn-danger">
-                                Reset Database
-                            </button>
-                            <button type="submit" name="action" value="create_sample_data" class="btn btn-warning">
-                                Create Sample Data
-                            </button>
-                            <button type="submit" name="action" value="check_db" class="btn btn-info">
-                                Check Database Connection
-                            </button>
-                        </div>
+                    <form method="post" action="{{ url_for('debug.reset_db') }}">
+                        <button class="btn btn-danger w-100 mb-2" type="submit">
+                            Reset Database &amp; Ensure Tables
+                        </button>
+                    </form>
+                    <form method="post" action="{{ url_for('debug.create_sample_data') }}">
+                        <button class="btn btn-primary w-100 mb-2" type="submit">
+                            Create Sample Data
+                        </button>
+                    </form>
+                    <form method="post" action="{{ url_for('debug.check_connection') }}">
+                        <button class="btn btn-info w-100 mb-2" type="submit">
+                            Check DB Connection
+                        </button>
+                    </form>
+                    <form method="post" action="{{ url_for('debug.cleanup_filieres') }}">
+                        <button class="btn btn-warning w-100 mb-2" type="submit">
+                            Cleanup Filieres Table
+                        </button>
+                    </form>
+                    <form method="post" action="{{ url_for('debug.create_admin') }}">
+                        <button class="btn btn-success w-100" type="submit">
+                            Create Default Admin User
+                        </button>
                     </form>
                 </div>
             </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Data Cleanup</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('cleanup_filieres') }}" class="mb-3">
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-secondary">
-                                Cleanup Filiere Headers
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Debug Views</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{{ url_for('debug_all') }}" class="list-group-item list-group-item-action">
-                            Debug All
-                        </a>
-                        <a href="{{ url_for('debug_student') }}" class="list-group-item list-group-item-action">
-                            Debug Student
-                        </a>
-                        <a href="{{ url_for('debug_room') }}" class="list-group-item list-group-item-action">
-                            Debug Room
-                        </a>
-                        <a href="{{ url_for('debug_filiere') }}" class="list-group-item list-group-item-action">
-                            Debug Filiere
-                        </a>
-                        <a href="{{ url_for('debug_user') }}" class="list-group-item list-group-item-action">
-                            Debug User
-                        </a>
-                    </div>
-                </div>
+            <div class="alert alert-info mt-3">
+                <strong>Note:</strong> These actions are for development/debug only. Use with caution!
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

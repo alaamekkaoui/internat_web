@@ -2,105 +2,76 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from controllers.filiere_controller import FiliereController
 from utilities.xlsx_utils import export_xlsx, import_xlsx
 from utilities.pdf_utils import export_pdf
-from utils.decorators import login_required, role_required # Corrected path
-from utilities.sample_filiere_utils import generate_sample_filieres_xlsx
+from utils.decorators import login_required, role_required
 import os
+from datetime import datetime
+from werkzeug.utils import secure_filename
+from utilities.file_utils import handle_file_upload
+from utilities.sample_utils import generate_sample_filieres_xlsx
 
 filiere_bp = Blueprint('filiere', __name__)
 filiere_controller = FiliereController()
 
 @filiere_bp.route('/filieres', methods=['GET'])
 def list_filieres():
-    try:
-        filieres = filiere_controller.list_filieres()
-        # print(filieres) # Keep for debugging if necessary
-        return render_template('filiere/list.html', filieres=filieres)
-    except Exception as e:
-        flash(str(e), 'danger')
-        return render_template('filiere/list.html', filieres=[])
+    print('filiere_route.list_filieres called')
+    filieres = filiere_controller.list_filieres()
+    return render_template('filiere/list.html', filieres=filieres)
 
-@filiere_bp.route('/filieres/add', methods=['GET', 'POST'])
+@filiere_bp.route('/filieres/add', methods=['POST'])
 @login_required
 def add_filiere():
-    if request.method == 'POST':
-        try:
-            data = {
-                'name': request.form.get('name')
-            }
-            # print(data) # Keep for debugging if necessary
-            filiere_controller.add_filiere(data)
-            flash('Filière ajoutée avec succès!', 'success')
-            return redirect(url_for('filiere.list_filieres'))
-        except Exception as e:
-            flash(str(e), 'danger')
-            return render_template('filiere/add.html', filiere_data=request.form)
-    return render_template('filiere/add.html')
-
-@filiere_bp.route('/filieres/<int:filiere_id>', methods=['GET'])
-def get_filiere(filiere_id): # Assuming viewing a single filiere is public
+    print('filiere_route.add_filiere called')
     try:
-        filiere = filiere_controller.get_filiere(filiere_id)
-        # print(filiere) # Keep for debugging if necessary
-        if not filiere:
-            flash('Filière non trouvée', 'danger')
-            return redirect(url_for('filiere.list_filieres'))
-        return render_template('filiere/view.html', filiere=filiere)
+        data = request.form.to_dict()
+        result = filiere_controller.add_filiere(data)
+        if isinstance(result, dict) and 'error' in result:
+            flash(result['error'], 'danger')
+        else:
+            flash('Filière ajoutée avec succès!', 'success')
     except Exception as e:
         flash(str(e), 'danger')
-        return redirect(url_for('filiere.list_filieres'))
+    return redirect(url_for('filiere.list_filieres'))
 
 @filiere_bp.route('/filieres/<int:filiere_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_filiere(filiere_id):
-    try:
-        filiere = filiere_controller.get_filiere(filiere_id)
-        if not filiere:
-            flash('Filière non trouvée', 'danger')
-            return redirect(url_for('filiere.list_filieres'))
+    print('filiere_route.edit_filiere called')
+    filiere = filiere_controller.get_filiere(filiere_id)
+    if not filiere:
+        flash('Filière non trouvée', 'danger')
+        return redirect(url_for('filiere.list_filieres'))
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        data['id'] = filiere_id
+        result = filiere_controller.update_filiere(filiere_id, data)
+        if isinstance(result, dict) and 'error' in result:
+            flash(result['error'], 'danger')
+        else:
+            flash('Filière mise à jour avec succès!', 'success')
+        return redirect(url_for('filiere.list_filieres'))
+    return render_template('filiere/edit.html', filiere=filiere)
 
-        if request.method == 'POST':
-            data = {
-                'name': request.form.get('name')
-            }
-            filiere_controller.update_filiere(filiere_id, data)
-            flash('Filière modifiée avec succès!', 'success')
-            return redirect(url_for('filiere.list_filieres'))
-        return render_template('filiere/edit.html', filiere=filiere)
+@filiere_bp.route('/filieres/<int:filiere_id>/delete', methods=['POST'])
+@login_required
+def delete_filiere(filiere_id):
+    print('filiere_route.delete_filiere called')
+    try:
+        result = filiere_controller.delete_filiere(filiere_id)
+        if isinstance(result, dict) and 'error' in result:
+            flash(result['error'], 'danger')
+        else:
+            flash('Filière supprimée avec succès!', 'success')
     except Exception as e:
         flash(str(e), 'danger')
-        return redirect(url_for('filiere.list_filieres'))
-
-@filiere_bp.route('/filieres/<int:filiere_id>/delete', methods=['POST']) # Changed to POST for consistency
-@login_required
-# @role_required('admin') # Uncomment if only admins can delete
-def delete_filiere_post(filiere_id): # Renamed to avoid conflict if you have a GET delete
-    try:
-        filiere_controller.delete_filiere(filiere_id)
-        flash('Filière supprimée avec succès!', 'success') # Flash message for POST
-    except Exception as e:
-        flash(f'Erreur lors de la suppression: {str(e)}', 'danger')
     return redirect(url_for('filiere.list_filieres'))
-
-# If you still need a DELETE method via JS that returns JSON:
-@filiere_bp.route('/filieres/<int:filiere_id>/api_delete', methods=['DELETE'])
-@login_required
-# @role_required('admin')
-def delete_filiere_api(filiere_id):
-    try:
-        filiere_controller.delete_filiere(filiere_id)
-        return jsonify({'status': 'success', 'message': 'Filière supprimée avec succès!'})
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
 
 @filiere_bp.route('/filieres/export/xlsx', methods=['GET'])
 def export_filieres_xlsx():
+    print('filiere_route.export_filieres_xlsx called')
     try:
         filieres = filiere_controller.list_filieres()
-        folder = 'static/xlsx'
-        os.makedirs(folder, exist_ok=True)
-        filename = 'filieres.xlsx'
-        return export_xlsx(filieres, filename, folder)
+        return export_xlsx(filieres, filename='filieres.xlsx')
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('filiere.list_filieres'))
@@ -108,54 +79,82 @@ def export_filieres_xlsx():
 @filiere_bp.route('/filieres/import/xlsx', methods=['POST'])
 @login_required
 def import_filieres_xlsx():
-    from utilities.xlsx_utils import import_xlsx
+    print('filiere_route.import_filieres_xlsx called')
     file = request.files['file']
     data = import_xlsx(file)
     required_fields = ['name']
-    cleaned_filieres = []
-    for filiere in data:
-        for field in required_fields:
-            value = filiere.get(field, None)
-            if value is None or value == '' or (isinstance(value, float) and (value != value)):
-                filiere[field] = 'Non trouvé'
-        cleaned_filieres.append(filiere)
-    # Save or update filieres in DB
-    from controllers.filiere_controller import FiliereController
-    filiere_controller = FiliereController()
     imported_count = 0
-    for filiere in cleaned_filieres:
-        try:
-            # Optionally, check for duplicates by name before adding
-            filiere_controller.add_filiere(filiere)
-            imported_count += 1
-        except Exception as e:
-            print(f"Erreur lors de l'import de la filière: {filiere.get('name', '')} - {e}")
+    imported_filieres = []
+    failed_filieres = []
+    existing_filieres = [f['name'] for f in filiere_controller.list_filieres()]
+    for filiere in data:
+        # Convert ImmutableMultiDict to dict if needed
+        if hasattr(filiere, 'to_dict'):
+            filiere = dict(filiere)
+        else:
+            filiere = dict(filiere)
+        missing = [field for field in required_fields if not filiere.get(field) or str(filiere.get(field)).lower() == 'nan']
+        warning = ''
+        if missing:
+            for field in missing:
+                filiere[field] = None
+            warning = f" (informations manquantes ou invalides: {', '.join(missing)}, valeur ignorée)"
+        if filiere.get('name') in existing_filieres:
+            failed_filieres.append(f"<b>Filière {filiere.get('name', 'inconnu')}</b> - nom déjà existant.")
             continue
-    flash(f'{imported_count} filières importées avec succès!', 'success')
+        try:
+            result = filiere_controller.add_filiere(filiere)
+            if isinstance(result, dict) and result.get('error'):
+                failed_filieres.append(f"<b>Filière {filiere.get('name', 'inconnu')}</b> - erreur: {result['error']}{warning}")
+            else:
+                imported_filieres.append(f"<b>Filière {filiere.get('name', 'inconnu')}</b>{warning}")
+                imported_count += 1
+        except Exception as e:
+            failed_filieres.append(f"<b>Filière {filiere.get('name', 'inconnu')}</b> - erreur technique: {e}{warning}")
+    msg = f"<b>{imported_count} filière(s) importée(s) avec succès !</b>"
+    if imported_filieres:
+        msg += '<br><u>Filières ajoutées :</u><ul>' + ''.join(f'<li>{s}</li>' for s in imported_filieres) + '</ul>'
+    if failed_filieres:
+        msg += '<br><u>Filières non ajoutées ou partiellement ajoutées :</u><ul>' + ''.join(f'<li>{s}</li>' for s in failed_filieres) + '</ul>'
+    # --- AJAX/JSON support ---
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.accept_mimetypes['application/json']:
+        if failed_filieres:
+            return jsonify({'success': False, 'error': msg})
+        else:
+            return jsonify({'success': True, 'message': msg})
+    # --- End AJAX/JSON support ---
+    if failed_filieres:
+        flash(msg, 'warning')
+    else:
+        flash(msg, 'success')
     return redirect(url_for('filiere.list_filieres'))
 
 @filiere_bp.route('/filieres/export/pdf', methods=['GET'])
 def export_filieres_pdf():
+    print('filiere_route.export_filieres_pdf called')
     try:
-        # Similar to room_route, this needs to be clarified how export_pdf works
         filieres = filiere_controller.list_filieres()
-        pdf_dir = 'static/pdfs'
-        os.makedirs(pdf_dir, exist_ok=True)
-        pdf_path = os.path.join(pdf_dir, 'filieres_list.pdf')
-        
-        # Assuming export_pdf can take data and a path:
-        export_pdf(filieres, pdf_path) # This might need adjustment
-        
-        # If export_pdf generates the file and returns path or True:
-        # return send_file(pdf_path, as_attachment=True, download_name='filieres.pdf', mimetype='application/pdf')
-        # Keeping closer to original if export_pdf is meant to return a response:
-        return export_pdf(filieres, pdf_path) # Verify this
+        if isinstance(filieres, dict) and 'error' in filieres:
+            flash(filieres['error'], 'danger')
+            return redirect(url_for('filiere.list_filieres'))
+        from utilities.pdf_utils import export_pdf
+        pdf_buffer = export_pdf(filieres)
+        if not pdf_buffer:
+            flash('Error generating PDF', 'danger')
+            return redirect(url_for('filiere.list_filieres'))
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name='filieres.pdf',
+            mimetype='application/pdf'
+        )
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('filiere.list_filieres'))
 
-@filiere_bp.route('/filieres/sample-xlsx', methods=['GET'])
+@filiere_bp.route('/filieres/download-sample-xlsx', methods=['GET'])
 def download_sample_filieres_xlsx():
+    print('filiere_route.download_sample_filieres_xlsx called')
     return generate_sample_filieres_xlsx()
 
 @filiere_bp.route('/filieres/bulk-action', methods=['POST'])

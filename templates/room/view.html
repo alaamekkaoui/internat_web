@@ -1,153 +1,115 @@
-<!-- templates/room/view.html -->
 {% extends "base.html" %}
-{% block title %}Détails de la Chambre{% endblock %}
+{% block title %}Détails de la Chambre {{ room.room_number }}{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-12">
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h3 class="text-success">
+                <i class="bi bi-door-closed"></i> 
+                Détails de la Chambre {{ room.room_number }}
+            </h3>
+        </div>
+    </div>
+
+    <!-- Room Information -->
+    <div class="row mb-4">
+        <div class="col-md-6">
             <div class="card">
-                <div class="card-header">
-                    <h3 class="mb-0">
-                        <i class="bi bi-door-closed"></i> Détails de la Chambre
-                    </h3>
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Informations de la Chambre</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h4>Informations de la Chambre</h4>
-                            <table class="table">
-                                <tr>
-                                    <th>Numéro de chambre:</th>
-                                    <td>{{ room.room_number }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Pavillon:</th>
-                                    <td>{{ room.pavilion }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Type:</th>
-                                    <td>
-                                        {% if room.room_type == 'single' %}
-                                            Simple (1 personne)
-                                        {% elif room.room_type == 'double' %}
-                                            Double (2 personnes)
-                                        {% elif room.room_type == 'triple' %}
-                                            Triple (3 personnes)
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Capacité:</th>
-                                    <td>{{ room.capacity }} personne(s)</td>
-                                </tr>
-                                <tr>
-                                    <th>Statut:</th>
-                                    <td>
-                                        {% if room.is_used %}
-                                            <span class="badge bg-danger">Occupée</span>
-                                        {% else %}
-                                            <span class="badge bg-success">Disponible</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="col-md-6">
-                            <h4>Étudiants Actuels</h4>
-                            {% if students %}
-                                <table class="table">
-                                    <thead>
-                                        <tr>
-                                            <th>Matricule</th>
-                                            <th>Nom</th>
-                                            <th>Prénom</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for student in students %}
-                                        <tr>
-                                            <td>{{ student.matricule }}</td>
-                                            <td>{{ student.nom }}</td>
-                                            <td>{{ student.prenom }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            {% else %}
-                                <p class="text-muted">Aucun étudiant dans cette chambre</p>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="mt-4">
-                        <a href="{{ url_for('room.edit_room', room_id=room.id) }}" class="btn btn-outline-warning">
-                            <i class="bi bi-pencil"></i> Modifier
-                        </a>
-                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
-                            <i class="bi bi-trash"></i> Supprimer
-                        </button>
-                        <a href="{{ url_for('room.list_rooms') }}" class="btn btn-outline-success">
-                            <i class="bi bi-arrow-left"></i> Retour à la liste
-                        </a>
-                    </div>
+                    <table class="table">
+                        <tr>
+                            <th>Pavillon:</th>
+                            <td>{{ room.pavilion }}</td>
+                        </tr>
+                        <tr>
+                            <th>Type:</th>
+                            <td>{{ room.room_type }}</td>
+                        </tr>
+                        <tr>
+                            <th>Capacité:</th>
+                            <td>{{ room.capacity }}</td>
+                        </tr>
+                        <tr>
+                            <th>Occupation actuelle:</th>
+                            <td>{{ room.used_capacity }}/{{ room.capacity }}</td>
+                        </tr>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Delete Confirmation Modal -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirmer la suppression</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Êtes-vous sûr de vouloir supprimer cette chambre ? Cette action est irréversible.
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form action="{{ url_for('room.delete_room', room_id=room.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Supprimer</button>
-                </form>
+    <!-- Assigned Students -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Étudiants Assignés</h5>
+                </div>
+                <div class="card-body">
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Matricule</th>
+                                    <th>Nom</th>
+                                    <th>Prénom</th>
+                                    <th>Filière</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.matricule }}</td>
+                                    <td>{{ student.nom }}</td>
+                                    <td>{{ student.prenom }}</td>
+                                    <td>{{ student.filiere }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('student.modify_student', student_id=student.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Modifier">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <a href="{{ url_for('student.student_profile', student_id=student.id) }}" 
+                                               class="btn btn-sm btn-outline-info" 
+                                               title="Voir détails">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        Aucun étudiant n'est actuellement assigné à cette chambre.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block css %}
-<style>
-.card-header {
-    background: rgba(167,198,54,0.1) !important;
-    color: #145A32 !important;
-    border-bottom: 1px solid #A7C636;
-}
-.btn-outline-success {
-    border-color: #28a745;
-    color: #28a745;
-}
-.btn-outline-success:hover {
-    background: #28a745;
-    color: #fff;
-}
-.btn-outline-danger {
-    border-color: #dc3545;
-    color: #dc3545;
-}
-.btn-outline-danger:hover {
-    background: #dc3545;
-    color: #fff;
-}
-.btn-outline-warning {
-    border-color: #ffc107;
-    color: #ffc107;
-}
-.btn-outline-warning:hover {
-    background: #ffc107;
-    color: #000;
-}
-</style>
-{% endblock %}
+    <!-- Action Buttons -->
+    <div class="row mt-4">
+        <div class="col">
+            <a href="{{ url_for('room.edit_room', room_number=room.room_number) }}" 
+               class="btn btn-primary">
+                <i class="bi bi-pencil-square"></i> Modifier la chambre
+            </a>
+            <a href="{{ url_for('room.list_rooms') }}" 
+               class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Retour à la liste
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

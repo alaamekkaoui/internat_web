@@ -10,7 +10,7 @@ load_dotenv()
 MYSQL_HOST = os.environ.get('MYSQL_HOST', 'localhost')
 MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
-MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB', 'internat')
+MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB') or os.environ.get('MYSQL_NAME', 'internat')
 
 def get_connection(use_db=True, max_retries=10, retry_delay=1):
     """Get a connection to the MySQL database with retry logic"""
@@ -105,4 +105,42 @@ def check_connection():
         return True
     except Exception as e:
         print(f"Database connection check failed: {e}")
+        return False
+
+def init_db():
+    """Initialize the database and create tables if they don't exist"""
+    try:
+        # First connect without database to create it if it doesn't exist
+        conn = get_connection(use_db=False)
+        cursor = conn.cursor()
+        
+        # Create database if it doesn't exist
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {MYSQL_DATABASE}")
+        cursor.close()
+        conn.close()
+        
+        # Now connect with database to create tables
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Create users table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                role VARCHAR(50) NOT NULL DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Create other tables as needed...
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        print("Database initialized successfully")
+        return True
+    except Exception as e:
+        print(f"Error initializing database: {e}")
         return False

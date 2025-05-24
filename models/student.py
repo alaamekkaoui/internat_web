@@ -5,7 +5,6 @@ from datetime import datetime
 import pymysql
 
 from database.db import get_connection
-from database.setup import ensure_database_and_tables
 
 class Student:
     def __init__(self):
@@ -22,9 +21,10 @@ class Student:
     def get_all_students(self):
         try:
             self.cursor.execute("""
-                SELECT s.*, f.name as filiere_name
+                SELECT s.*, f.name as filiere_name, r.pavilion
                 FROM students s
                 LEFT JOIN filieres f ON s.filiere_id = f.id
+                LEFT JOIN rooms r ON s.num_chambre = r.room_number
                 ORDER BY s.created_at DESC
             """)
             return self.cursor.fetchall()
@@ -125,16 +125,33 @@ class Student:
             'observation', 'laureat', 'num_chambre', 'mobilite', 'vie_associative',
             'bourse', 'photo', 'type_section'
         ]
+        
+        # Get existing student data
+        existing_student = self.get_student_by_id(student_id)
+        if not existing_student:
+            return False
+            
+        # Preserve existing values for fields that are not provided or are empty
         for field in allowed_fields:
-            student_data.setdefault(field, None)
+            if field not in student_data or student_data[field] in [None, '', 'None', 'none', 'null']:
+                student_data[field] = existing_student.get(field)
 
-        if student_data.get('num_chambre') == '':
+        # Handle empty room number - explicitly set to None if empty string or other empty values
+        if 'num_chambre' in student_data and student_data['num_chambre'] in ['', 'None', 'none', 'null', None]:
             student_data['num_chambre'] = None
 
-        # Calculate academic year based on current year
-        current_year = datetime.now().year
-        next_year = current_year + 1
-        student_data['annee_universitaire'] = f"{current_year}/{next_year}"
+        # Handle filiere_id
+        if student_data.get('filiere_id') in ['', 'None', 'none', 'null']:
+            student_data['filiere_id'] = None
+        else:
+            try:
+                student_data['filiere_id'] = int(student_data['filiere_id'])
+            except (ValueError, TypeError):
+                student_data['filiere_id'] = existing_student.get('filiere_id')
+
+        # Only update academic year if explicitly provided
+        if 'annee_universitaire' not in student_data or not student_data['annee_universitaire']:
+            student_data['annee_universitaire'] = existing_student.get('annee_universitaire')
 
         try:
             # Get previous room before update
@@ -172,7 +189,6 @@ class Student:
             return True
         except Exception as e:
             print(f"[ERROR] update_student: {repr(e)} (type: {type(e)})")
-            print(f"[DEBUG] update_student params: {params}")
             self.conn.rollback()
             return {'error': f'{repr(e)} (type: {type(e)})'}
 

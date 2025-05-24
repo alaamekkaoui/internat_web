@@ -64,13 +64,14 @@
             <td>{% if room.is_used %}Oui{% else %}Non{% endif %}</td>
             <td>
                 <div class="btn-group" role="group">
-                    <a href="/rooms/{{ room.id }}" class="btn btn-sm btn-outline-primary" title="Voir">
+                    <a href="/rooms/profile/{{ room.room_number }}" class="btn btn-sm btn-outline-primary" title="Voir">
                         <i class="bi bi-eye"></i>
                     </a>
-                    <a href="/rooms/{{ room.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
+                    <a href="/rooms/edit/{{ room.room_number }}" class="btn btn-sm btn-outline-primary" title="Modifier">
                         <i class="bi bi-pencil-square"></i>
                     </a>
-                    <form action="/rooms/{{ room.id }}/delete" method="POST" style="display:inline;">
+                    <form action="/rooms/delete/{{ room.room_number }}" method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette chambre ?');" title="Supprimer">
                             <i class="bi bi-trash-fill"></i>
                         </button>
@@ -99,7 +100,7 @@ if(importForm) {
             body: formData
         })
         .then(response => response.json().catch(() => response.text()))
-        .then(data => {
+        .then data => {
             importLoading.style.display = 'none';
             if (typeof data === 'object' && data.success) {
                 location.reload();

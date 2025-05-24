@@ -1,12 +1,13 @@
 # models/room.py
 from database.db import get_connection
 from datetime import datetime
+import pymysql
 
 class Room:
     def __init__(self):
         self.table_name = 'rooms'
         self.conn = get_connection()
-        self.cursor = self.conn.cursor()
+        self.cursor = self.conn.cursor(pymysql.cursors.DictCursor)
 
     def __del__(self):
         if hasattr(self, 'cursor') and self.cursor:
@@ -17,11 +18,29 @@ class Room:
     def get_all_rooms(self):
         """Get all rooms from the database."""
         try:
-            self.cursor.execute(f"SELECT * FROM {self.table_name}")
+            self.cursor.execute("""
+                SELECT r.*, 
+                       (SELECT COUNT(*) FROM students s WHERE s.num_chambre = r.room_number) as used_capacity
+                FROM rooms r
+                ORDER BY r.room_number
+            """)
             return self.cursor.fetchall()
         except Exception as e:
-            print(f"Error getting all rooms: {e}")
+            print(f"[ERROR] get_all_rooms: {e}")
             return []
+
+    def get_room_by_number(self, room_number):
+        try:
+            self.cursor.execute("""
+                SELECT r.*, 
+                       (SELECT COUNT(*) FROM students s WHERE s.num_chambre = r.room_number) as used_capacity
+                FROM rooms r
+                WHERE r.room_number = %s
+            """, (room_number,))
+            return self.cursor.fetchone()
+        except Exception as e:
+            print(f"[ERROR] get_room_by_number: {e}")
+            return None
 
     def get_room(self, room_id):
         try:
@@ -122,6 +141,16 @@ class Room:
             return True
         except Exception as e:
             print(f"Error deleting room: {e}")
+            self.conn.rollback()
+            raise Exception(str(e))
+
+    def delete_room_by_number(self, room_number):
+        try:
+            self.cursor.execute(f"DELETE FROM {self.table_name} WHERE room_number = %s", (room_number,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error deleting room by number: {e}")
             self.conn.rollback()
             raise Exception(str(e))
 

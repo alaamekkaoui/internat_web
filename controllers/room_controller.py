@@ -34,3 +34,9 @@ class RoomController:
             return self.room_model.delete_room(room_id)
         except Exception as e:
             raise Exception(str(e))
+
+    def delete_room_by_number(self, room_number):
+        try:
+            return self.room_model.delete_room_by_number(room_number)
+        except Exception as e:
+            raise Exception(str(e))

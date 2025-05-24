@@ -23,6 +23,8 @@ def export_xlsx(data, filename='students.xlsx'):
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False)
     output.seek(0)
+    # Always force the correct extension and mimetype
+    filename = filename.rsplit('.', 1)[0] + '.xlsx'
     return send_file(
         output,
         as_attachment=True,

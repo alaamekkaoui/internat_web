@@ -13,12 +13,19 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
+        if not username or not password:
+            flash('Veuillez remplir tous les champs', 'danger')
+            return render_template('user/login.html')
+        
         user = User().get_user_by_username(username)
         
         if user and check_password_hash(user['password'], password):
+            session.clear()  # Clear any existing session
             session['user_id'] = user['id']
             session['username'] = user['username']
             session['role'] = user['role']
+            session.permanent = True  # Make session persistent
+            
             flash('Connexion réussie!', 'success')
             return redirect(url_for('home.home'))
         else:
@@ -26,10 +33,49 @@ def login():
     
     return render_template('user/login.html')
 
+@user_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        role = request.form.get('role', 'user')  # Default to 'user' if not specified
+        
+        # Basic validation
+        if not all([username, password, confirm_password]):
+            flash('Veuillez remplir tous les champs', 'danger')
+            return render_template('user/register.html')
+        
+        if password != confirm_password:
+            flash('Les mots de passe ne correspondent pas', 'danger')
+            return render_template('user/register.html')
+        
+        # Check if username already exists
+        existing_user = User().get_user_by_username(username)
+        if existing_user:
+            flash('Ce nom d\'utilisateur est déjà pris', 'danger')
+            return render_template('user/register.html')
+        
+        # Create new user
+        try:
+            success, message = user_controller.create_user(username, password, role)
+            if success:
+                flash('Inscription réussie! Vous pouvez maintenant vous connecter.', 'success')
+                return redirect(url_for('user.login'))
+            else:
+                flash(message, 'danger')
+        except Exception as e:
+            print(f"Error creating user: {str(e)}")
+            flash('Une erreur est survenue lors de l\'inscription', 'danger')
+    
+    return render_template('user/register.html')
+
 @user_bp.route('/logout')
+@login_required
 def logout():
+    username = session.get('username')
     session.clear()
-    flash('Vous avez été déconnecté', 'info')
+    flash(f'Au revoir {username}! Vous avez été déconnecté', 'info')
     return redirect(url_for('user.login'))
 
 @user_bp.route('/users')
@@ -47,23 +93,6 @@ def profile():
         flash('Utilisateur non trouvé', 'danger')
         return redirect(url_for('home.home'))
     return render_template('user/profile.html', user=user)
-
-@user_bp.route('/profile/edit', methods=['GET', 'POST'])
-@login_required
-def edit_profile():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        success, message = user_controller.update_user_profile(
-            session.get('user_id'),
-            email=email
-        )
-        if success:
-            flash(message, 'success')
-            return redirect(url_for('user.profile'))
-        flash(message, 'danger')
-    
-    user = user_controller.get_user_by_id(session.get('user_id'))
-    return render_template('user/edit_profile.html', user=user)
 
 @user_bp.route('/profile/change-password', methods=['GET', 'POST'])
 @login_required

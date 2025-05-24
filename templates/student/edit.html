@@ -3,169 +3,195 @@
 {% block title %}Modifier un étudiant{% endblock %}
 
 {% block content %}
-<h2>Modifier un étudiant</h2>
-
-<form action="{{ url_for('student.modify_student', student_id=student.id) }}" method="POST" enctype="multipart/form-data">
+<div class="container-fluid">
     <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="nom" class="form-label">Nom</label>
-            <input type="text" class="form-control" id="nom" name="nom" value="{{ student.nom }}" required>
-        </div>
-        <div class="col-md-6">
-            <label for="prenom" class="form-label">Prénom</label>
-            <input type="text" class="form-control" id="prenom" name="prenom" value="{{ student.prenom }}" required>
+        <div class="col">
+            <h3 class="text-primary">
+                <i class="bi bi-person-plus"></i> 
+                Modifier un étudiant
+            </h3>
         </div>
     </div>
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="matricule" class="form-label">Matricule</label>
-            <input type="text" class="form-control" id="matricule" name="matricule" value="{{ student.matricule }}" required>
-        </div>
-        <div class="col-md-6">
-            <label for="cin" class="form-label">CIN</label>
-            <input type="text" class="form-control" id="cin" name="cin" value="{{ student.cin }}" required>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="date_naissance" class="form-label">Date de naissance</label>
-            <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="{{ student.date_naissance }}" required>
-        </div>
-        <div class="col-md-6">
-            <label for="nationalite" class="form-label">Nationalité</label>
-            <input type="text" class="form-control" id="nationalite" name="nationalite" value="{{ student.nationalite }}" required>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="sexe" class="form-label">Sexe</label>
-            <select class="form-select" id="sexe" name="sexe" required>
-                <option value="M" {% if student.sexe == 'M' %}selected{% endif %}>Masculin</option>
-                <option value="F" {% if student.sexe == 'F' %}selected{% endif %}>Féminin</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="telephone" class="form-label">Numéro de téléphone</label>
-            <input type="text" class="form-control" id="telephone" name="telephone" value="{{ student.telephone }}" required>
-        </div>
-        <div class="col-md-6">
-            <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" name="email" value="{{ student.email }}" required>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="annee_universitaire" class="form-label">Année universitaire</label>
-            <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" value="{{ student.annee_universitaire or current_academic_year }}" required>
-        </div>
-        <div class="col-md-6">
-            <label for="filiere_id" class="form-label">Filière</label>
-            <select class="form-select" id="filiere_id" name="filiere_id" required>
-                <option value="">Sélectionner une filière</option>
-                {% for filiere in filieres %}
-                    <option value="{{ filiere.id }}" {% if student.filiere_id == filiere.id %}selected{% endif %}>{{ filiere.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="dossier_medicale" class="form-label">Dossier médical</label>
-            <textarea class="form-control" id="dossier_medicale" name="dossier_medicale" rows="2" required>{{ student.dossier_medicale }}</textarea>
-        </div>
-        <div class="col-md-6">
-            <label for="observation" class="form-label">Observation</label>
-            <textarea class="form-control" id="observation" name="observation" rows="2" required>{{ student.observation }}</textarea>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="laureat" class="form-label">Laureat</label>
-            <select class="form-select" id="laureat" name="laureat" required>
-                <option value="oui" {% if student.laureat == 'oui' %}selected{% endif %}>Oui</option>
-                <option value="non" {% if student.laureat == 'non' %}selected{% endif %}>Non</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <label for="num_chambre" class="form-label">Numéro de chambre</label>
-            <select class="form-select" id="num_chambre" name="num_chambre">
-                <option value="">Aucune</option>
-                {% for room in rooms %}
-                    <option value="{{ room.room_number }}" {% if student.num_chambre == room.room_number %}selected{% endif %}>{{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})</option>
-                {% endfor %}
-            </select>
-            <div class="form-text">Laissez vide si l'étudiant n'a pas de chambre assignée pour le moment.</div>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="mobilite" class="form-label">Mobilité</label>
-            <select class="form-select" id="mobilite" name="mobilite" required>
-                <option value="oui" {% if student.mobilite == 'oui' %}selected{% endif %}>Oui</option>
-                <option value="non" {% if student.mobilite == 'non' %}selected{% endif %}>Non</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <label for="vie_associative" class="form-label">Vie associative</label>
-            <select class="form-select" id="vie_associative" name="vie_associative" required>
-                <option value="oui" {% if student.vie_associative == 'oui' %}selected{% endif %}>Oui</option>
-                <option value="non" {% if student.vie_associative == 'non' %}selected{% endif %}>Non</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label for="bourse" class="form-label">Bourse</label>
-            <select class="form-select" id="bourse" name="bourse" required>
-                <option value="oui" {% if student.bourse == 'oui' %}selected{% endif %}>Oui</option>
-                <option value="non" {% if student.bourse == 'non' %}selected{% endif %}>Non</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <label for="photo" class="form-label">Photo</label>
-            <input type="file" class="form-control" id="photo" name="photo" accept="image/png, image/jpeg, image/gif">
-            <div class="form-text">Formats acceptés: JPG, PNG, GIF. Taille maximale: 5MB</div>
-            <div class="col-md-4">
-                {% if student.photo %}
-                    <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" 
-                         alt="Photo de l'étudiant" 
-                         class="img-fluid rounded"
-                         style="max-width: 300px; max-height: 300px;">
-                {% else %}
-                    <div class="alert alert-info">Aucune photo disponible</div>
-                {% endif %}
+    <form action="{{ url_for('student.modify_student', student_id=student.id) }}" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        <!-- Personal Information -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Informations personnelles</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="nom" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="nom" name="nom" value="{{ student.nom }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="prenom" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="prenom" name="prenom" value="{{ student.prenom }}" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="date_naissance" class="form-label">Date de naissance</label>
+                        <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="{{ student.date_naissance }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="nationalite" class="form-label">Nationalité</label>
+                        <input type="text" class="form-control" id="nationalite" name="nationalite" value="{{ student.nationalite }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="telephone" class="form-label">Numéro de téléphone</label>
+                        <input type="tel" class="form-control" id="telephone" name="telephone" value="{{ student.telephone }}" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ student.email }}" required>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="row mb-3">
-       <div class="col-md-6">
-            <label for="type_section" class="form-label">Internat</label>
-            <select class="form-select" id="type_section" name="type_section" required>
-                <option value="">Sélectionner...</option>
-                <option value="APESA" {% if student.type_section == 'APESA' %}selected{% endif %}>APESA</option>
-                <option value="IAV" {% if student.type_section == 'IAV' %}selected{% endif %}>IAV</option>
-            </select>
+        <!-- Academic Information -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Informations académiques</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="matricule" class="form-label">Matricule</label>
+                        <input type="text" class="form-control" id="matricule" name="matricule" value="{{ student.matricule }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="cin" class="form-label">CIN</label>
+                        <input type="text" class="form-control" id="cin" name="cin" value="{{ student.cin }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="sexe" class="form-label">Sexe</label>
+                        <select class="form-select" id="sexe" name="sexe" required>
+                            <option value="M" {{ 'selected' if student.sexe == 'M' else '' }}>Masculin</option>
+                            <option value="F" {{ 'selected' if student.sexe == 'F' else '' }}>Féminin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="filiere_id" class="form-label">Filière</label>
+                        <select class="form-select" id="filiere_id" name="filiere_id" required>
+                            <option value="">Sélectionner...</option>
+                            {% for f in filieres %}
+                            <option value="{{ f.id }}" {{ 'selected' if student.filiere_id|int == f.id|int else '' }}>
+                                {{ f.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="annee_universitaire" class="form-label">Année universitaire</label>
+                        <input type="text" class="form-control" id="annee_universitaire" name="annee_universitaire" value="{{ student.annee_universitaire }}" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="type_section" class="form-label">Internat</label>
+                        <select class="form-select" id="type_section" name="type_section" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="APESA" {{ 'selected' if student.type_section == 'APESA' else '' }}>APESA</option>
+                            <option value="IAV" {{ 'selected' if student.type_section == 'IAV' else '' }}>IAV</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="num_chambre" class="form-label">Numéro de chambre</label>
+                        <select class="form-select" id="num_chambre" name="num_chambre">
+                            <option value="">Aucune</option>
+                            {% for room in rooms %}
+                            <option value="{{ room.room_number }}" {% if student.num_chambre == room.room_number %}selected{% endif %}>
+                                {{ room.room_number }} ({{ room.pavilion }}, {{ room.room_type }}, Cap: {{ room.capacity }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Sélectionnez "Aucune" pour retirer l'assignation de chambre.</div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="d-flex justify-content-between">
-        <button type="submit" class="btn btn-primary">Enregistrer les modifications</button>
-        <form action="{{ url_for('student.delete_student', student_id=student.id) }}" method="POST">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Supprimer cet étudiant ?');">Supprimer</button>
-        </form>
-    </div>
-</form>
+        <!-- Additional Information -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Informations supplémentaires</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="dossier_medical" class="form-label">Dossier médical</label>
+                        <input type="text" class="form-control" id="dossier_medical" name="dossier_medical" value="{{ student.dossier_medical }}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="observation" class="form-label">Observation</label>
+                        <input type="text" class="form-control" id="observation" name="observation" value="{{ student.observation }}">
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="laureat" class="form-label">Laureat</label>
+                        <select class="form-select" id="laureat" name="laureat">
+                            <option value="non" {{ 'selected' if student.laureat == 'non' else '' }}>Non</option>
+                            <option value="oui" {{ 'selected' if student.laureat == 'oui' else '' }}>Oui</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="mobilite" class="form-label">Mobilité</label>
+                        <select class="form-select" id="mobilite" name="mobilite">
+                            <option value="non" {{ 'selected' if student.mobilite == 'non' else '' }}>Non</option>
+                            <option value="oui" {{ 'selected' if student.mobilite == 'oui' else '' }}>Oui</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="vie_associative" class="form-label">Vie associative</label>
+                        <select class="form-select" id="vie_associative" name="vie_associative">
+                            <option value="non" {{ 'selected' if student.vie_associative == 'non' else '' }}>Non</option>
+                            <option value="oui" {{ 'selected' if student.vie_associative == 'oui' else '' }}>Oui</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label for="bourse" class="form-label">Bourse</label>
+                        <select class="form-select" id="bourse" name="bourse">
+                            <option value="non" {{ 'selected' if student.bourse == 'non' else '' }}>Non</option>
+                            <option value="oui" {{ 'selected' if student.bourse == 'oui' else '' }}>Oui</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{{ url_for('student.list_students') }}" class="btn btn-secondary">
+                <i class="bi bi-x-circle"></i> Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save"></i> Enregistrer
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
 {% endblock %}
-

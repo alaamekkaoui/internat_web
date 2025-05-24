@@ -13,7 +13,7 @@ import random
 
 load_dotenv()
 
-MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB')
+MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB') or os.environ.get('MYSQL_NAME')
 
 def ensure_database_and_tables():
     # First connect without database
@@ -148,78 +148,3 @@ def ensure_database_and_tables():
     finally:
         cursor.close()
         conn.close()
-
-def create_default_admin_user_if_not_exists():
-    # Import User model locally to avoid circular import issues if any
-    from models.user import User 
-    admin_user = User.find_by_username('admin')
-    if not admin_user:
-        admin_user_obj = User()
-        # Use a more secure password in a real application
-        created_user = admin_user_obj.create(username='admin', password='admin', role='admin')
-        if created_user and created_user.id:
-            print("Default admin user created successfully.")
-        else:
-            print("Failed to create default admin user. Check logs for errors.")
-    else:
-        print("Admin user already exists.")
-
-def create_dummy_data():
-    """Create sample data for testing"""
-    try:
-        # Create sample filieres
-        filiere_model = Filiere()
-        filieres = [
-            "Génie Informatique",
-            "Génie Civil",
-            "Génie Mécanique",
-            "Génie Électrique",
-            "Génie Industriel"
-        ]
-        for filiere in filieres:
-            filiere_model.create_filiere(filiere)
-        
-        # Create sample rooms
-        room_model = Room()
-        for i in range(1, 21):  # Create 20 rooms
-            room_model.create_room(f"Room {i}", random.randint(2, 4))
-        
-        # Create sample users
-        user_model = User()
-        users = [
-            ("admin", "admin123", "admin"),
-            ("user1", "user123", "user"),
-            ("user2", "user123", "user")
-        ]
-        for username, password, role in users:
-            user_model.create_user(username, password, role)
-        
-        # Create sample students
-        student_model = Student()
-        first_names = ["Mohammed", "Ahmed", "Fatima", "Amina", "Youssef", "Sara", "Karim", "Laila"]
-        last_names = ["Alami", "Benani", "Cherkaoui", "Daoudi", "El Fathi", "Hassani", "Idrissi", "Kabbaj"]
-        cities = ["Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir", "Meknès", "Oujda"]
-        
-        for _ in range(50):  # Create 50 students
-            first_name = random.choice(first_names)
-            last_name = random.choice(last_names)
-            cne = f"P{random.randint(100000, 999999)}"
-            cin = f"AB{random.randint(100000, 999999)}"
-            birth_date = datetime.now() - timedelta(days=random.randint(365*18, 365*25))
-            birth_place = random.choice(cities)
-            address = f"{random.randint(1, 100)} Rue {random.choice(['Mohammed V', 'Hassan II', 'Ibn Sina', 'Al Massira'])}"
-            phone = f"06{random.randint(10000000, 99999999)}"
-            email = f"{first_name.lower()}.{last_name.lower()}@gmail.com"
-            filiere_id = random.randint(1, len(filieres))
-            academic_year = "2023/2024"
-            
-            student_model.create_student(
-                first_name, last_name, cne, cin, birth_date, birth_place,
-                address, phone, email, filiere_id, academic_year
-            )
-        
-        return True
-    except Exception as e:
-        print(f"Error creating dummy data: {e}")
-        return False
-

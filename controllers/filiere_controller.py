@@ -9,11 +9,9 @@ class FiliereController:
         try:
             filiere = self.filiere_model.get_all_filieres()
             print(filiere)
-            if not filiere:
-                raise Exception('No filieres found')
-            return filiere
+            return filiere if filiere else []
         except Exception as e:
-            raise Exception(str(e))
+            return []
 
     def add_filiere(self, data):
         try:

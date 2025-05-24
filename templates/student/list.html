@@ -97,8 +97,20 @@
                 <td>{{ student.prenom or '' }}</td>
                 <td>{{ student.filiere_name or '' }}</td>
                 <td>{{ student.type_section or '' }}</td>
-                <td>{{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</td>
-                <td>{{ student.pavilion or '' }}</td>
+                <td>
+                    {% if student.num_chambre and student.num_chambre != 'Aucune' %}
+                        {{ student.num_chambre }}
+                    {% else %}
+                        Aucune
+                    {% endif %}
+                </td>
+                <td>
+                    {% if student.num_chambre and student.num_chambre != 'Aucune' %}
+                        {{ student.pavilion }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>
                     <div class="btn-group" role="group">
                         <a href="{{ url_for('student.student_profile', student_id=student.id) }}" class="btn btn-sm btn-outline-secondary" title="Voir le profil">

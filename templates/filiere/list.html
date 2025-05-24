@@ -2,115 +2,150 @@
 {% extends "base.html" %}
 {% block title %}Liste des Filières{% endblock %}
 {% block content %}
-<h3 class="text-success"><i class="bi bi-mortarboard"></i> Liste des Filières</h3>
-<div class="d-flex gap-2 mb-3 align-items-center">
-    <a href="/filieres/add" class="btn btn-success"><i class="bi bi-plus-circle"></i> Ajouter une filière</a>
-    <a href="{{ url_for('filiere.export_filieres_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
-    <a href="{{ url_for('filiere.export_filieres_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importFiliereModal"><i class="bi bi-upload"></i> Importer</button>
-</div>
-
-<!-- Import Modal -->
-<div class="modal fade" id="importFiliereModal" tabindex="-1" aria-labelledby="importFiliereModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ url_for('filiere.import_filieres_xlsx') }}" method="POST" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="importFiliereModalLabel">Importer des filières (XLSX)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <input type="file" class="form-control" name="file" accept=".xlsx" required id="importFiliereFile">
-                    </div>
-                    <a href="{{ url_for('filiere.download_sample_filieres_xlsx') }}" download>Télécharger un exemple</a>
-                    <div id="importFiliereLoading" style="display:none;" class="text-center mt-2">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Importation...</span>
-                        </div>
-                        <div>Importation en cours...</div>
-                    </div>
-                    <div id="importFiliereError" class="alert alert-danger mt-2" style="display:none;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Importer</button>
-                </div>
-            </form>
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h3 class="text-success"><i class="bi bi-mortarboard"></i> Liste des Filières</h3>
         </div>
+        <div class="col-auto">
+            <div class="d-flex gap-2">
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#filiereModal">
+                    <i class="bi bi-plus-circle"></i> Ajouter une filière
+                </button>
+                <a href="{{ url_for('filiere.export_filieres_pdf') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-file-pdf"></i> PDF
+                </a>
+                <a href="{{ url_for('filiere.export_filieres_xlsx') }}" class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark-excel-fill"></i> XLSX
+                </a>
+                <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importFiliereModal">
+                    <i class="bi bi-upload"></i> Importer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="filiereModal" tabindex="-1" aria-labelledby="filiereModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="filiereForm" method="POST" action="{{ url_for('filiere.add_filiere') }}" class="needs-validation" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="filiereModalLabel">
+                            <i class="bi bi-plus-circle"></i> Ajouter une filière
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="filiereId" name="id">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nom de la filière</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                            <div class="invalid-feedback">
+                                Veuillez entrer le nom de la filière.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Enregistrer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importFiliereModal" tabindex="-1" aria-labelledby="importFiliereModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form action="{{ url_for('filiere.import_filieres_xlsx') }}" method="POST" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="importFiliereModalLabel">Importer des filières (XLSX)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <input type="file" class="form-control" name="file" accept=".xlsx" required id="importFiliereFile">
+                        </div>
+                        <a href="{{ url_for('filiere.download_sample_filieres_xlsx') }}" download>Télécharger un exemple</a>
+                        <div id="importFiliereLoading" style="display:none;" class="text-center mt-2">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Importation...</span>
+                            </div>
+                            <div>Importation en cours...</div>
+                        </div>
+                        <div id="importFiliereError" class="alert alert-danger mt-2" style="display:none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Importer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-success">
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for filiere in filieres %}
+                <tr>
+                    <td>{{ filiere.id }}</td>
+                    <td>{{ filiere.name }}</td>
+                    <td class="text-end">
+                        <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-primary" title="Modifier">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form action="/filieres/{{ filiere.id }}/delete" method="POST" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<table class="table">
-    <thead class="table-success">
-        <tr>
-            <th>ID</th>
-            <th>Nom</th>
-            <th>Description</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for filiere in filieres %}
-        <tr>
-            <td>{{ filiere.id }}</td>
-            <td>{{ filiere.name }}</td>
-            <td>{{ filiere.description }}</td>
-            <td>
-                <div class="btn-group" role="group">
-                    <a href="/filieres/{{ filiere.id }}" class="btn btn-sm btn-outline-primary" title="Voir">
-                        <i class="bi bi-eye"></i>
-                    </a>
-                    <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
-                        <i class="bi bi-pencil-square"></i>
-                    </a>
-                    <form action="/filieres/{{ filiere.id }}/delete" method="POST" style="display:inline;">
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </form>
-                </div>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
 <script>
-// AJAX import for filieres
-const importForm = document.querySelector('#importFiliereModal form');
-const importFile = document.getElementById('importFiliereFile');
-const importLoading = document.getElementById('importFiliereLoading');
-const importError = document.getElementById('importFiliereError');
-if(importForm) {
-    importForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        importError.style.display = 'none';
-        importLoading.style.display = 'block';
-        const formData = new FormData(importForm);
-        fetch(importForm.action, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json().catch(() => response.text()))
-        .then(data => {
-            importLoading.style.display = 'none';
-            if (typeof data === 'object' && data.success) {
-                location.reload();
-            } else if (typeof data === 'object' && data.error) {
-                importError.textContent = data.error;
-                importError.style.display = 'block';
-            } else {
-                // fallback: reload if not JSON
-                location.reload();
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
             }
-        })
-        .catch(err => {
-            importLoading.style.display = 'none';
-            importError.textContent = 'Erreur lors de l\'importation.';
-            importError.style.display = 'block';
-        });
-    });
-}
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Reset form when modal is closed
+document.getElementById('filiereModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('filiereForm').reset();
+    document.getElementById('filiereId').value = '';
+    document.getElementById('filiereForm').action = "{{ url_for('filiere.add_filiere') }}";
+    document.getElementById('filiereModalLabel').innerHTML = '<i class="bi bi-plus-circle"></i> Ajouter une filière';
+    document.getElementById('filiereForm').classList.remove('was-validated');
+});
 </script>
 {% endblock %}

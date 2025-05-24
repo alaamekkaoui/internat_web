@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Profil chambre{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: rgba(167,198,54,0.1); color: #145A32; border-bottom: 1px solid #A7C636;">
+                    <h3 class="mb-0">
+                        <i class="bi bi-door-closed"></i> Profil de la chambre
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr><th>ID:</th><td>{{ room.id }}</td></tr>
+                                <tr><th>Numéro:</th><td>{{ room.room_number }}</td></tr>
+                                <tr><th>Pavillon:</th><td>{{ room.pavilion }}</td></tr>
+                                <tr><th>Type:</th><td>{{ room.room_type|capitalize }}</td></tr>
+                                <tr><th>Capacité:</th><td>{{ room.capacity }}</td></tr>
+                                <tr><th>Occupée:</th><td>{% if room.is_used %}Oui{% else %}Non{% endif %}</td></tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h5 class="mb-0"><i class="bi bi-people"></i> Étudiants assignés</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if room.students and room.students|length > 0 %}
+                                    <ul class="list-group">
+                                        {% for student in room.students %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ student.prenom }} {{ student.nom }}
+                                            <span class="badge bg-success">{{ student.matricule }}</span>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <div class="text-muted">Aucun étudiant assigné à cette chambre.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a href="{{ url_for('room.add_room') }}" class="btn btn-outline-success">
+                            <i class="bi bi-plus"></i> Nouvelle chambre
+                        </a>
+                        <a href="{{ url_for('room.list_rooms') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Retour à la liste
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block css %}
+<style>
+.card-header {
+    background: rgba(167,198,54,0.1) !important;
+    color: #145A32 !important;
+    border-bottom: 1px solid #A7C636;
+}
+.btn-outline-success {
+    border-color: #28a745;
+    color: #28a745;
+}
+.btn-outline-success:hover {
+    background: #28a745;
+    color: #fff;
+}
+.btn-outline-primary {
+    border-color: #145A32;
+    color: #145A32;
+}
+.btn-outline-primary:hover {
+    background: #145A32;
+    color: #fff;
+}
+</style>
+{% endblock %}

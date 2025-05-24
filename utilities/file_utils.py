@@ -97,4 +97,15 @@ def handle_file_upload(file, upload_dir='uploads', filename_prefix=''):
 
     except Exception as e:
         print(f"❌ Unexpected error: {str(e)}")
-        return {'success': False, 'error': str(e)} 
+        return {'success': False, 'error': str(e)}
+
+def delete_file(filepath):
+    """Safely delete a file if it exists"""
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+        return False
+    except Exception as e:
+        print(f"[ERROR] delete_file: {e}")
+        return False 

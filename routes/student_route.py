@@ -19,36 +19,68 @@ student_controller = StudentController()
 
 @student_bp.route('/students', methods=['GET'])
 def list_students():
-    # Get filter params
-    type_section = request.args.get('type_section', '')
-    keyword = request.args.get('keyword', '')
-    chambre = request.args.get('chambre', '')
-    students = student_controller.list_students()
-    # Filter by type_section if set
-    if type_section:
-        students = [s for s in students if s.get('type_section') == type_section]
-    # Filter by keyword if set
-    if keyword:
-        students = [s for s in students if keyword.lower() in (s.get('nom','').lower() + s.get('prenom','').lower() + s.get('matricule','').lower())]
-    # Filter by chambre if set
-    if chambre:
-        students = [s for s in students if (s.get('num_chambre') == chambre) or (chambre == 'Aucune' and (s.get('num_chambre') in [None, '', 'no room']))]
-    # Mark 'Aucune' for students with no room for display, and add pavillon
-    for s in students:
-        if s.get('num_chambre') in [None, '', 'no room']:
-            s['num_chambre'] = 'Aucune'
-            s['pavilion'] = ''
-        else:
-            # Find the room to get the pavilion
-            from controllers.room_controller import RoomController
-            rooms = RoomController().list_rooms()
-            room = next((r for r in rooms if r.get('room_number') == s['num_chambre']), None)
-            s['pavilion'] = room['pavilion'] if room else ''
-    return render_template('student/list.html', students=students)
+    print('student_route.list_students called')
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # Number of students per page
+    
+    # Get filter parameters
+    search = request.args.get('search', '')
+    filiere_id = request.args.get('filiere', type=int)
+    internat = request.args.get('internat', '')
+    
+    # Get paginated students
+    students, total = student_controller.get_paginated_students(
+        page=page,
+        per_page=per_page,
+        search=search,
+        filiere_id=filiere_id,
+        internat=internat
+    )
+    
+    # Create custom pagination object
+    class Pagination:
+        def __init__(self, page, per_page, total, items):
+            self.page = page
+            self.per_page = per_page
+            self.total = total
+            self.items = items
+            self.pages = (total + per_page - 1) // per_page
+            self.has_prev = page > 1
+            self.has_next = page < self.pages
+            self.prev_num = page - 1 if self.has_prev else None
+            self.next_num = page + 1 if self.has_next else None
+
+        def iter_pages(self, left_edge=2, left_current=2, right_current=5, right_edge=2):
+            last = 0
+            for num in range(1, self.pages + 1):
+                if (num <= left_edge or
+                    (num > self.page - left_current - 1 and
+                     num < self.page + right_current) or
+                    num > self.pages - right_edge):
+                    if last + 1 != num:
+                        yield None
+                    yield num
+                    last = num
+    
+    pagination = Pagination(
+        page=page,
+        per_page=per_page,
+        total=total,
+        items=students
+    )
+    
+    # Get filieres for the filter dropdown
+    filieres = FiliereController().list_filieres()
+    
+    return render_template('student/list.html', 
+                         students=students,
+                         pagination=pagination,
+                         filieres=filieres)
 
 @student_bp.route('/students/add', methods=['GET', 'POST'])
 @login_required
 def add_student():
+    print('student_route.add_student called')
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
     if request.method == 'POST':
@@ -63,6 +95,7 @@ def add_student():
 
 @student_bp.route('/students/<int:student_id>', methods=['GET'])
 def student_profile(student_id):
+    print('student_route.student_profile called')
     result = student_controller.get_student(student_id)
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
@@ -75,6 +108,7 @@ def student_profile(student_id):
 @login_required
 # @role_required('admin') # Uncomment if only admins can delete
 def delete_student(student_id):
+    print('student_route.delete_student called')
     try:
         result = student_controller.delete_student(student_id)
         if 'error' in result:
@@ -88,6 +122,7 @@ def delete_student(student_id):
 
 @student_bp.route('/students/export/xlsx', methods=['GET'])
 def export_students_xlsx():
+    print('student_route.export_students_xlsx called')
     try:
         students = student_controller.list_students()
         return export_xlsx(students, filename='students.xlsx')
@@ -98,47 +133,35 @@ def export_students_xlsx():
 @student_bp.route('/students/import/xlsx', methods=['POST'])
 @login_required
 def import_students_xlsx():
-    from utilities.xlsx_utils import import_xlsx
+    print('student_route.import_students_xlsx called')
     file = request.files['file']
     data = import_xlsx(file)
-    required_fields = ['matricule', 'nom', 'prenom', 'type_section', 'annee_universitaire']  # filiere is optional
-    errors = []
+    # All fields are now optional for import
     imported_count = 0
     from controllers.student_controller import StudentController
     from controllers.filiere_controller import FiliereController
+    from controllers.room_controller import RoomController
     student_controller = StudentController()
     filiere_controller = FiliereController()
-    filieres_by_name = {str(f['name']).strip().lower(): f['id'] for f in filiere_controller.list_filieres()}
+    room_controller = RoomController()
     filieres_by_id = {str(f['id']): f['id'] for f in filiere_controller.list_filieres()}
+    rooms_by_num = {str(r['room_number']): r['room_number'] for r in room_controller.list_rooms()}
     imported_students = []
     failed_students = []
     for student in data:
-        # Check for filiere_id in the row
+        # If filiere_id not found, set to empty string
         filiere_id_val = str(student.get('filiere_id', '')).strip()
-        filiere_id = None
-        if filiere_id_val.isdigit() and filiere_id_val in filieres_by_id:
-            filiere_id = filieres_by_id[filiere_id_val]
+        if not filiere_id_val or filiere_id_val not in filieres_by_id:
+            student['filiere_id'] = ''
         else:
-            # If not valid id, try by filiere name
-            filiere_val = str(student.get('filiere', '')).strip()
-            if filiere_val:
-                filiere_id = filieres_by_name.get(filiere_val.lower())
-        student['filiere_id'] = filiere_id if filiere_id else None
-        # Normalize sexe
-        sexe_val = str(student.get('sexe', '')).strip().lower()
-        if sexe_val in ['m', 'homme', 'male', '1']:
-            student['sexe'] = 'M'
-        elif sexe_val in ['f', 'femme', 'female', '2']:
-            student['sexe'] = 'F'
-        else:
-            student['sexe'] = None
-        # Check required fields
-        missing = [field for field in required_fields if not student.get(field)]
-        if missing:
-            failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - informations manquantes: {', '.join(missing)}")
-            continue
-        if not student['filiere_id'] and (student.get('filiere') or filiere_id_val):
-            failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - filière '{student.get('filiere', '') or filiere_id_val}' non trouvée.")
+            student['filiere_id'] = filieres_by_id[filiere_id_val]
+        # If num_chambre not found, set to empty string
+        num_chambre_val = str(student.get('num_chambre', '')).strip()
+        if num_chambre_val and num_chambre_val not in rooms_by_num:
+            student['num_chambre'] = ''
+        # If date_naissance missing, set to default
+        if not student.get('date_naissance'):
+            student['date_naissance'] = '0001-01-01'
         try:
             result = student_controller.add_student(student)
             if isinstance(result, dict) and result.get('error'):
@@ -160,6 +183,7 @@ def import_students_xlsx():
 
 @student_bp.route('/students/export/pdf', methods=['GET'])
 def export_students_pdf():
+    print('student_route.export_students_pdf called')
     try:
         students = student_controller.list_students()
         if isinstance(students, dict) and 'error' in students:
@@ -183,6 +207,7 @@ def export_students_pdf():
 @student_bp.route('/students/<int:student_id>/upload-image', methods=['POST'])
 @login_required # Modifies student data
 def upload_student_image(student_id):
+    print('student_route.upload_student_image called')
     try:
         # Get student info
         student = student_controller.get_student(student_id)
@@ -224,8 +249,7 @@ def upload_student_image(student_id):
 @student_bp.route('/students/<int:student_id>/modify', methods=['GET', 'POST'])
 @login_required
 def modify_student(student_id):
-    from controllers.filiere_controller import FiliereController
-    from controllers.room_controller import RoomController
+    print('student_route.modify_student called')
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
     if request.method == 'POST':
@@ -239,18 +263,14 @@ def modify_student(student_id):
         return redirect(url_for('student.student_profile', student_id=student_id))
     # GET request - show edit form
     student = student_controller.get_student(student_id)
-    if 'error' in student:
-        flash(student['error'], 'danger')
+    if not student:
+        flash('Student not found', 'danger')
         return redirect(url_for('student.list_students'))
-    # Ensure student is an object with attribute access for Jinja
-    class StudentObj(dict):
-        def __getattr__(self, item):
-            return self.get(item)
-    student_obj = StudentObj(student)
-    return render_template('student/edit.html', student=student_obj, filieres=filieres, rooms=rooms)
+    return render_template('student/edit.html', student=student, filieres=filieres, rooms=rooms)
 
 @student_bp.route('/students/<int:student_id>/download-pdf', methods=['GET'])
 def download_pdf(student_id):
+    print('student_route.download_pdf called')
     # You should implement PDF generation logic here. For now, serve a static or pre-generated PDF.
     pdf_path = f'static/pdfs/student_{student_id}.pdf'
     if not os.path.exists(pdf_path):
@@ -260,6 +280,7 @@ def download_pdf(student_id):
 
 @student_bp.route('/<int:student_id>/export-pdf')
 def export_pdf(student_id):
+    print('student_route.export_pdf called')
     """Export student profile as PDF"""
     try:
         student = StudentController().get_student(student_id)
@@ -283,4 +304,5 @@ def export_pdf(student_id):
 
 @student_bp.route('/students/sample-xlsx', methods=['GET'])
 def download_sample_students_xlsx():
+    print('student_route.download_sample_students_xlsx called')
     return generate_sample_students_xlsx()
