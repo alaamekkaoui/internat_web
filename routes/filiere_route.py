@@ -157,3 +157,92 @@ def export_filieres_pdf():
 @filiere_bp.route('/filieres/sample-xlsx', methods=['GET'])
 def download_sample_filieres_xlsx():
     return generate_sample_filieres_xlsx()
+
+@filiere_bp.route('/filieres/bulk-action', methods=['POST'])
+@login_required
+def bulk_action_filieres():
+    action = request.form.get('bulk_action')
+    selected_ids = request.form.getlist('selected_filieres')
+    if not selected_ids:
+        flash('Aucune filière sélectionnée.', 'warning')
+        return redirect(url_for('filiere.list_filieres'))
+    # Get selected filieres
+    filieres = [f for f in filiere_controller.list_filieres() if str(f['id']) in selected_ids]
+    if action == 'delete':
+        deleted = 0
+        for fid in selected_ids:
+            try:
+                filiere_controller.delete_filiere(int(fid))
+                deleted += 1
+            except Exception as e:
+                print(f"Erreur suppression filière {fid}: {e}")
+        flash(f'{deleted} filière(s) supprimée(s) avec succès.', 'success')
+        return redirect(url_for('filiere.list_filieres'))
+    elif action == 'export_xlsx':
+        import pandas as pd
+        import io
+        rows = []
+        for f in filieres:
+            rows.append({
+                'ID': f.get('id', ''),
+                'Nom': f.get('name', ''),
+                'Date de création': f.get('created_at', '')
+            })
+        df = pd.DataFrame(rows)
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False)
+        output.seek(0)
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name='filieres_selection.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    elif action == 'export_pdf':
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib.units import inch
+        import io
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        content = []
+        content.append(Paragraph("Liste des Filières (Sélection)", styles['Heading1']))
+        content.append(Spacer(1, 20))
+        table_data = [["ID", "Nom", "Date de création"]]
+        for f in filieres:
+            table_data.append([
+                f.get('id', ''),
+                f.get('name', ''),
+                f.get('created_at', '')
+            ])
+        table = Table(table_data, colWidths=[1*inch, 2.5*inch, 2*inch])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ]))
+        content.append(table)
+        doc.build(content)
+        buffer.seek(0)
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name='filieres_selection.pdf',
+            mimetype='application/pdf'
+        )
+    else:
+        flash('Action non reconnue.', 'danger')
+        return redirect(url_for('filiere.list_filieres'))

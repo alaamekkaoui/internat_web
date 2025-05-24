@@ -3,14 +3,12 @@
 {% block title %}Liste des Étudiants{% endblock %}
 
 {% block content %}
-<div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
-    <h3 class="mb-0 text-success"><i class="bi bi-people-fill"></i> Liste des Étudiants</h3>
-    <div class="d-flex gap-2">
-        <a href="{{ url_for('student.add_student') }}" class="btn btn-success"><i class="bi bi-person-plus-fill"></i> Ajouter un étudiant</a>
-        <a href="{{ url_for('student.export_students_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
-        <a href="{{ url_for('student.export_students_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
-        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importStudentModal"><i class="bi bi-upload"></i> Importer</button>
-    </div>
+<h3 class="mb-0 text-success"><i class="bi bi-people-fill"></i> Liste des Étudiants</h3>
+<div class="d-flex gap-2 mb-3 align-items-center">
+    <a href="{{ url_for('student.add_student') }}" class="btn btn-success"><i class="bi bi-person-plus-fill"></i> Ajouter un étudiant</a>
+    <a href="{{ url_for('student.export_students_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
+    <a href="{{ url_for('student.export_students_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importStudentModal"><i class="bi bi-upload"></i> Importer</button>
 </div>
 
 <!-- Search & Filter Form -->
@@ -77,18 +75,10 @@
     </div>
 </div>
 
-<!-- Bulk Actions and Students Table -->
-<form id="bulkStudentForm" method="POST" action="{{ url_for('student.bulk_action_students') }}">
-<div class="d-flex gap-2 mb-2" id="bulkStudentActions" style="display:none;">
-    <button type="submit" name="bulk_action" value="delete" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer la sélection</button>
-    <button type="submit" name="bulk_action" value="export_xlsx" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exporter XLSX</button>
-    <button type="submit" name="bulk_action" value="export_pdf" class="btn btn-danger"><i class="bi bi-file-pdf"></i> Exporter PDF</button>
-</div>
 <div class="table-responsive">
     <table class="table table-striped">
         <thead class="table-success">
             <tr>
-                <th><input type="checkbox" id="selectAllStudents"></th>
                 <th>Matricule</th>
                 <th>Nom</th>
                 <th>Prénom</th>
@@ -102,7 +92,6 @@
         <tbody>
             {% for student in students %}
             <tr>
-                <td><input type="checkbox" name="selected_students" value="{{ student.id }}" class="student-checkbox"></td>
                 <td>{{ student.matricule or '' }}</td>
                 <td>{{ student.nom or '' }}</td>
                 <td>{{ student.prenom or '' }}</td>
@@ -149,21 +138,7 @@
         </tbody>
     </table>
 </div>
-</form>
-<script>
-const selectAllS = document.getElementById('selectAllStudents');
-const checkboxesS = document.querySelectorAll('.student-checkbox');
-const bulkActionsS = document.getElementById('bulkStudentActions');
-function updateBulkActionsS() {
-  const checked = document.querySelectorAll('.student-checkbox:checked').length;
-  bulkActionsS.style.display = checked > 0 ? 'flex' : 'none';
-}
-selectAllS.addEventListener('change', function() {
-  checkboxesS.forEach(cb => { cb.checked = selectAllS.checked; });
-  updateBulkActionsS();
-});
-checkboxesS.forEach(cb => cb.addEventListener('change', updateBulkActionsS));
-</script>
+
 {% endblock %}
 
 {% block css %}

@@ -12,7 +12,7 @@ MYSQL_USER = os.environ.get('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.environ.get('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.environ.get('MYSQL_DATABASE') or os.environ.get('MYSQL_DB', 'internat')
 
-def get_connection(use_db=True, max_retries=3, retry_delay=1):
+def get_connection(use_db=True, max_retries=10, retry_delay=1):
     """Get a connection to the MySQL database with retry logic"""
     retries = 0
     last_error = None

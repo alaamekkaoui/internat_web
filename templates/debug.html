@@ -1,141 +1,80 @@
 {% extends "base.html" %}
 
-{% block title %}Debug - Internat{% endblock %}
+{% block title %}Debug Page{% endblock %}
 
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <div class="display-1 mb-3">
-                            <i class="bi bi-bug text-danger"></i>
+    <h1 class="mb-4">Debug Page</h1>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Database Operations</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('debug_page') }}" class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="action" value="reset_db" class="btn btn-danger">
+                                Reset Database
+                            </button>
+                            <button type="submit" name="action" value="create_sample_data" class="btn btn-warning">
+                                Create Sample Data
+                            </button>
+                            <button type="submit" name="action" value="check_db" class="btn btn-info">
+                                Check Database Connection
+                            </button>
                         </div>
-                        <h2>Page de Debug</h2>
-                        <p class="text-muted">Outils de développement et de maintenance</p>
-                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Data Cleanup</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('cleanup_filieres') }}" class="mb-3">
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-secondary">
+                                Cleanup Filiere Headers
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <div class="row g-4">
-                        <!-- Reset Database -->
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <i class="bi bi-database-dash text-danger"></i>
-                                        Réinitialiser la Base de Données
-                                    </h5>
-                                    <p class="card-text text-muted">
-                                        Supprime et recrée toutes les tables. ATTENTION: Cette action est irréversible!
-                                    </p>
-                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
-                                        <input type="hidden" name="action" value="reset_db">
-                                        <button type="submit" class="btn btn-danger" 
-                                                onclick="return confirm('Êtes-vous sûr de vouloir réinitialiser la base de données? Cette action est irréversible!')">
-                                            <i class="bi bi-trash"></i> Réinitialiser
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Create Default Admin -->
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <i class="bi bi-person-plus text-primary"></i>
-                                        Créer Admin par Défaut
-                                    </h5>
-                                    <p class="card-text text-muted">
-                                        Crée un compte administrateur avec les identifiants par défaut (admin/admin)
-                                    </p>
-                                    <a href="{{ url_for('auth.create_admin') }}" class="btn btn-primary">
-                                        <i class="bi bi-person-plus"></i> Créer Admin
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Create Sample Data -->
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <i class="bi bi-database-add text-success"></i>
-                                        Créer Données de Test
-                                    </h5>
-                                    <p class="card-text text-muted">
-                                        Ajoute des données de test (filieres, chambres, etc.)
-                                    </p>
-                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
-                                        <input type="hidden" name="action" value="create_sample_data">
-                                        <button type="submit" class="btn btn-success">
-                                            <i class="bi bi-plus-circle"></i> Créer Données
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Database Status -->
-                        <div class="col-md-6">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        <i class="bi bi-info-circle text-info"></i>
-                                        État de la Base de Données
-                                    </h5>
-                                    <p class="card-text text-muted">
-                                        Vérifie la connexion et l'état de la base de données
-                                    </p>
-                                    <form method="POST" action="{{ url_for('debug_page') }}" class="d-inline">
-                                        <input type="hidden" name="action" value="check_db">
-                                        <button type="submit" class="btn btn-info text-white">
-                                            <i class="bi bi-check-circle"></i> Vérifier
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Debug Views</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{{ url_for('debug_all') }}" class="list-group-item list-group-item-action">
+                            Debug All
+                        </a>
+                        <a href="{{ url_for('debug_student') }}" class="list-group-item list-group-item-action">
+                            Debug Student
+                        </a>
+                        <a href="{{ url_for('debug_room') }}" class="list-group-item list-group-item-action">
+                            Debug Room
+                        </a>
+                        <a href="{{ url_for('debug_filiere') }}" class="list-group-item list-group-item-action">
+                            Debug Filiere
+                        </a>
+                        <a href="{{ url_for('debug_user') }}" class="list-group-item list-group-item-action">
+                            Debug User
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-function confirmAction(form) {
-    const action = form.querySelector('button[type="submit"]:focus').value;
-    let message = '';
-    
-    if (action === 'reset_db') {
-        message = 'Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible !';
-    } else if (action === 'create_dummy') {
-        message = 'Voulez-vous créer des données de test ? Les données existantes ne seront pas affectées.';
-    }
-    
-    return confirm(message);
-}
-</script>
-{% endblock %}
-
-{% block css %}
-<style>
-.card {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.btn {
-    padding: 12px 20px;
-    font-size: 1.1rem;
-}
-
-.btn i {
-    margin-right: 8px;
-}
-</style>
-{% endblock %}
+{% endblock %} 

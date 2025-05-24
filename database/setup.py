@@ -4,6 +4,8 @@ from models.user import User
 from dotenv import load_dotenv
 from database.db import get_connection
 import pymysql
+import mysql.connector
+from mysql.connector import Error
 
 load_dotenv()
 
@@ -106,60 +108,6 @@ def create_tables():
     conn.commit()
     conn.close()
 
-def reset_database():
-    """Force drop and recreate the database"""
-    conn = None
-    cursor = None
-    try:
-        print("DEBUG: Resetting database...")
-        # First connect without database
-        conn = get_connection(use_db=False)
-        cursor = conn.cursor()
-        
-        # Kill all connections to the database
-        print(f"DEBUG: Killing all connections to {MYSQL_DATABASE}...")
-        cursor.execute(f"""
-            SELECT CONCAT('KILL ', id, ';')
-            FROM information_schema.processlist
-            WHERE db = '{MYSQL_DATABASE}';
-        """)
-        kill_commands = cursor.fetchall()
-        for cmd in kill_commands:
-            try:
-                cursor.execute(list(cmd.values())[0])
-            except:
-                pass
-        
-        # Drop database if exists
-        print(f"DEBUG: Dropping database {MYSQL_DATABASE}...")
-        cursor.execute(f"DROP DATABASE IF EXISTS `{MYSQL_DATABASE}`")
-        print(f"DEBUG: Dropped database {MYSQL_DATABASE}")
-        
-        # Create database
-        print(f"DEBUG: Creating database {MYSQL_DATABASE}...")
-        cursor.execute(f"CREATE DATABASE `{MYSQL_DATABASE}` DEFAULT CHARACTER SET 'utf8mb4'")
-        print(f"DEBUG: Created database {MYSQL_DATABASE}")
-        
-        # Select the database
-        conn.select_db(MYSQL_DATABASE)
-        
-        # Create tables
-        ensure_database_and_tables()
-        
-        conn.commit()
-        print("DEBUG: Database reset completed successfully")
-        return True
-    except Exception as e:
-        print(f"DEBUG: Error resetting database: {str(e)}")
-        if conn:
-            conn.rollback()
-        raise e
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
 def ensure_database_and_tables():
     """Ensure database and tables exist"""
     conn = None
@@ -248,11 +196,11 @@ def ensure_database_and_tables():
                 filiere_id BIGINT UNSIGNED,
                 dossier_medicale TEXT,
                 observation TEXT,
-                laureat VARCHAR(100) NOT NULL,
+                laureat VARCHAR(50) NOT NULL,
                 num_chambre VARCHAR(20),
-                mobilite VARCHAR(100) NOT NULL,
-                vie_associative TEXT NOT NULL,
-                bourse VARCHAR(100) NOT NULL,
+                mobilite VARCHAR(50) NOT NULL,
+                vie_associative VARCHAR(50) NOT NULL,
+                bourse VARCHAR(50) NOT NULL,
                 photo VARCHAR(255),
                 type_section VARCHAR(50) NOT NULL,
                 created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
@@ -263,10 +211,10 @@ def ensure_database_and_tables():
             print("Students table created successfully!")
 
         conn.commit()
-        print("All tables checked and created successfully!")
-        
-    except pymysql.Error as e:
-        print(f"Error creating database/tables: {e}")
+        print("All tables created successfully!")
+        return True
+    except Exception as e:
+        print(f"Error creating tables: {str(e)}")
         if conn:
             conn.rollback()
         raise e
@@ -275,6 +223,40 @@ def ensure_database_and_tables():
             cursor.close()
         if conn:
             conn.close()
+
+def reset_database():
+    """Reset the database by dropping and recreating it"""
+    try:
+        # First, kill all existing connections
+        conn = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', '')
+        )
+        cursor = conn.cursor()
+        
+        # Kill all connections to the database
+        cursor.execute(f"SELECT CONCAT('KILL ', id, ';') FROM information_schema.processlist WHERE db = '{os.getenv('DB_NAME', 'internat_db')}'")
+        kill_commands = cursor.fetchall()
+        for cmd in kill_commands:
+            cursor.execute(cmd[0])
+        
+        # Drop and recreate database
+        cursor.execute(f"DROP DATABASE IF EXISTS {os.getenv('DB_NAME', 'internat_db')}")
+        cursor.execute(f"CREATE DATABASE {os.getenv('DB_NAME', 'internat_db')}")
+        conn.commit()
+        
+        # Close connection
+        cursor.close()
+        conn.close()
+        
+        # Create tables
+        ensure_database_and_tables()
+        
+        return True
+    except Error as e:
+        print(f"Error resetting database: {e}")
+        return False
 
 if __name__ == "__main__":
     ensure_database_and_tables() 

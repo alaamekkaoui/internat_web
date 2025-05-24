@@ -2,9 +2,9 @@
 {% extends "base.html" %}
 {% block title %}Liste des Filières{% endblock %}
 {% block content %}
-<h3 class="text-success"><i class="bi bi-diagram-3"></i> Liste des Filières</h3>
-<a href="/filieres/add" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Ajouter une filière</a>
-<div class="d-flex gap-2">
+<h3 class="text-success"><i class="bi bi-mortarboard"></i> Liste des Filières</h3>
+<div class="d-flex gap-2 mb-3 align-items-center">
+    <a href="/filieres/add" class="btn btn-success"><i class="bi bi-plus-circle"></i> Ajouter une filière</a>
     <a href="{{ url_for('filiere.export_filieres_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
     <a href="{{ url_for('filiere.export_filieres_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importFiliereModal"><i class="bi bi-upload"></i> Importer</button>
@@ -21,9 +21,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <input type="file" class="form-control" name="file" accept=".xlsx" required>
+                        <input type="file" class="form-control" name="file" accept=".xlsx" required id="importFiliereFile">
                     </div>
                     <a href="{{ url_for('filiere.download_sample_filieres_xlsx') }}" download>Télécharger un exemple</a>
+                    <div id="importFiliereLoading" style="display:none;" class="text-center mt-2">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Importation...</span>
+                        </div>
+                        <div>Importation en cours...</div>
+                    </div>
+                    <div id="importFiliereError" class="alert alert-danger mt-2" style="display:none;"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -33,35 +40,77 @@
         </div>
     </div>
 </div>
+
 <table class="table">
-  <thead class="table-success">
-    <tr>
-      <th>ID</th>
-      <th>Nom</th>
-      <th>Date de création</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for filiere in filieres %}
-    <tr>
-      <td>{{ filiere.id }}</td>
-      <td>{{ filiere.name }}</td>
-      <td>{{ filiere.created_at }}</td>
-      <td>
-        <div class="btn-group" role="group">
-          <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
-            <i class="bi bi-pencil-square"></i>
-          </a>
-          <form action="/filieres/{{ filiere.id }}" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
-              <i class="bi bi-trash-fill"></i>
-            </button>
-          </form>
-        </div>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
+    <thead class="table-success">
+        <tr>
+            <th>ID</th>
+            <th>Nom</th>
+            <th>Description</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for filiere in filieres %}
+        <tr>
+            <td>{{ filiere.id }}</td>
+            <td>{{ filiere.name }}</td>
+            <td>{{ filiere.description }}</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <a href="/filieres/{{ filiere.id }}" class="btn btn-sm btn-outline-primary" title="Voir">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <form action="/filieres/{{ filiere.id }}/delete" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
+
+<script>
+// AJAX import for filieres
+const importForm = document.querySelector('#importFiliereModal form');
+const importFile = document.getElementById('importFiliereFile');
+const importLoading = document.getElementById('importFiliereLoading');
+const importError = document.getElementById('importFiliereError');
+if(importForm) {
+    importForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        importError.style.display = 'none';
+        importLoading.style.display = 'block';
+        const formData = new FormData(importForm);
+        fetch(importForm.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json().catch(() => response.text()))
+        .then(data => {
+            importLoading.style.display = 'none';
+            if (typeof data === 'object' && data.success) {
+                location.reload();
+            } else if (typeof data === 'object' && data.error) {
+                importError.textContent = data.error;
+                importError.style.display = 'block';
+            } else {
+                // fallback: reload if not JSON
+                location.reload();
+            }
+        })
+        .catch(err => {
+            importLoading.style.display = 'none';
+            importError.textContent = 'Erreur lors de l\'importation.';
+            importError.style.display = 'block';
+        });
+    });
+}
+</script>
 {% endblock %}

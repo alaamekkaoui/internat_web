@@ -118,12 +118,6 @@
                             <i class="bi bi-person-gear"></i> Utilisateurs
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.endpoint == 'debug_page' %}active{% endif %}" 
-                           href="{{ url_for('debug_page') }}">
-                            <i class="bi bi-bug"></i> Debug
-                        </a>
-                    </li>
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">

@@ -96,53 +96,67 @@ def export_students_xlsx():
         return redirect(url_for('student.list_students'))
 
 @student_bp.route('/students/import/xlsx', methods=['POST'])
-@login_required # Assuming import is a modification action
+@login_required
 def import_students_xlsx():
-    try:
-        intern_type = request.form.get('import_type_section', '')
-        file = request.files['file']
-        data = import_xlsx(file)
-        required_fields = [
-            'matricule', 'cin', 'nom', 'prenom', 'date_naissance', 'sexe', 'nationalite',
-            'telephone', 'email', 'annee_universitaire', 'filiere_id', 'dossier_medicale',
-            'observation', 'laureat', 'num_chambre', 'mobilite', 'vie_associative',
-            'bourse', 'photo', 'type_section'
-        ]
-        # Clean and convert all data before adding
-        cleaned_students = []
-        for student in data:
-            # Set intern type if specified
-            if intern_type:
-                student['type_section'] = intern_type
-            # Check for empty required fields and nan
-            for field in required_fields:
-                value = student.get(field, None)
-                if value is None or value == '' or (isinstance(value, float) and (value != value or isnan(value))):
-                    if field == 'date_naissance':
-                        student[field] = '01-01-0001'
-                    else:
-                        student[field] = 'Non trouvé'
-            # Normalize 'sexe' field to 'M' or 'F' for DB
-            sexe_val = str(student.get('sexe', '')).strip().lower()
-            if sexe_val in ['m', 'male', 'homme', 'h']:
-                student['sexe'] = 'M'
-            elif sexe_val in ['f', 'female', 'femme']:
-                student['sexe'] = 'F'
+    from utilities.xlsx_utils import import_xlsx
+    file = request.files['file']
+    data = import_xlsx(file)
+    required_fields = ['matricule', 'nom', 'prenom', 'type_section', 'annee_universitaire']  # filiere is optional
+    errors = []
+    imported_count = 0
+    from controllers.student_controller import StudentController
+    from controllers.filiere_controller import FiliereController
+    student_controller = StudentController()
+    filiere_controller = FiliereController()
+    filieres_by_name = {str(f['name']).strip().lower(): f['id'] for f in filiere_controller.list_filieres()}
+    filieres_by_id = {str(f['id']): f['id'] for f in filiere_controller.list_filieres()}
+    imported_students = []
+    failed_students = []
+    for student in data:
+        # Check for filiere_id in the row
+        filiere_id_val = str(student.get('filiere_id', '')).strip()
+        filiere_id = None
+        if filiere_id_val.isdigit() and filiere_id_val in filieres_by_id:
+            filiere_id = filieres_by_id[filiere_id_val]
+        else:
+            # If not valid id, try by filiere name
+            filiere_val = str(student.get('filiere', '')).strip()
+            if filiere_val:
+                filiere_id = filieres_by_name.get(filiere_val.lower())
+        student['filiere_id'] = filiere_id if filiere_id else None
+        # Normalize sexe
+        sexe_val = str(student.get('sexe', '')).strip().lower()
+        if sexe_val in ['m', 'homme', 'male', '1']:
+            student['sexe'] = 'M'
+        elif sexe_val in ['f', 'femme', 'female', '2']:
+            student['sexe'] = 'F'
+        else:
+            student['sexe'] = None
+        # Check required fields
+        missing = [field for field in required_fields if not student.get(field)]
+        if missing:
+            failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - informations manquantes: {', '.join(missing)}")
+            continue
+        if not student['filiere_id'] and (student.get('filiere') or filiere_id_val):
+            failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - filière '{student.get('filiere', '') or filiere_id_val}' non trouvée.")
+        try:
+            result = student_controller.add_student(student)
+            if isinstance(result, dict) and result.get('error'):
+                failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - erreur: {result['error']}")
             else:
-                student['sexe'] = 'Non trouvé'
-            cleaned_students.append(student)
-        # Save cleaned data for debugging
-        import json
-        with open('imported_students_debug.json', 'w', encoding='utf-8') as f:
-            json.dump(cleaned_students, f, ensure_ascii=False, indent=2)
-        # Now add students
-        for student in cleaned_students:
-            student_controller.add_student(student)
-        flash('Students imported successfully!', 'success')
-        return redirect(url_for('student.list_students'))
-    except Exception as e:
-        flash(str(e), 'danger')
-        return redirect(url_for('student.list_students'))
+                imported_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b>")
+                imported_count += 1
+        except Exception as e:
+            failed_students.append(f"<b>{student.get('nom', '')} {student.get('prenom', '')} (Matricule: {student.get('matricule', 'inconnu')})</b> - erreur technique: {e}")
+    msg = f"<b>{imported_count} étudiant(s) importé(s) avec succès !</b>"
+    if imported_students:
+        msg += '<br><u>Étudiants ajoutés :</u><ul>' + ''.join(f'<li>{s}</li>' for s in imported_students) + '</ul>'
+    if failed_students:
+        msg += '<br><u>Étudiants non ajoutés ou partiellement ajoutés :</u><ul>' + ''.join(f'<li>{s}</li>' for s in failed_students) + '</ul>'
+        flash(msg, 'warning')
+    else:
+        flash(msg, 'success')
+    return redirect(url_for('student.list_students'))
 
 @student_bp.route('/students/export/pdf', methods=['GET'])
 def export_students_pdf():

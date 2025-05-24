@@ -5,8 +5,11 @@ from models.student import Student
 from models.room import Room
 from models.filiere import Filiere
 from models.user import User
+from models.room_history import RoomHistory
 from database.db import get_connection
 import pymysql
+from datetime import datetime, timedelta
+import random
 
 load_dotenv()
 
@@ -146,133 +149,6 @@ def ensure_database_and_tables():
         cursor.close()
         conn.close()
 
-def reset_database():
-    """Reset the entire database by dropping and recreating all tables."""
-    conn = get_connection(use_db=False)
-    cursor = conn.cursor()
-    try:
-        # Drop database if exists
-        cursor.execute(f"DROP DATABASE IF EXISTS `{MYSQL_DATABASE}`")
-        conn.commit()
-        
-        # Recreate database and tables
-        ensure_database_and_tables()
-        return True
-    except pymysql.Error as e:
-        print(f"Error resetting database: {e}")
-        return False
-    finally:
-        cursor.close()
-        conn.close()
-
-def create_dummy_data():
-    """Create sample data for testing purposes."""
-    # Create dummy filieres first
-    filiere = Filiere()
-    try:
-        dummy_filieres = [
-            {'name': 'Informatique'},
-            {'name': 'Mathématiques'},
-            {'name': 'Physique'},
-            {'name': 'Chimie'},
-            {'name': 'Biologie'}
-        ]
-        
-        for filiere_data in dummy_filieres:
-            filiere.add_filiere(filiere_data)
-        
-        # Create dummy rooms
-        room = Room()
-        dummy_rooms = [
-            {
-                'room_number': '101',
-                'pavilion': 'A',
-                'room_type': 'double',
-                'capacity': 2,
-                'is_used': False
-            },
-            {
-                'room_number': '102',
-                'pavilion': 'A',
-                'room_type': 'double',
-                'capacity': 2,
-                'is_used': False
-            },
-            {
-                'room_number': '201',
-                'pavilion': 'B',
-                'room_type': 'triple',
-                'capacity': 3,
-                'is_used': False
-            },
-            {
-                'room_number': '202',
-                'pavilion': 'B',
-                'room_type': 'single',
-                'capacity': 1,
-                'is_used': False
-            }
-        ]
-        
-        for room_data in dummy_rooms:
-            room.add_room(room_data)
-        
-        # Create dummy students
-        student = Student()
-        dummy_students = [
-            {
-                'nom': 'Doe',
-                'prenom': 'John',
-                'sexe': 'M',
-                'matricule': '2024001',
-                'cin': 'AB123456',
-                'date_naissance': '2000-01-01',
-                'nationalite': 'Marocaine',
-                'telephone': '0612345678',
-                'email': 'john.doe@example.com',
-                'annee_universitaire': '2023-2024',
-                'filiere_id': '1',  # References Informatique
-                'dossier_medicale': 'Aucun',
-                'observation': 'Étudiant assidu',
-                'laureat': 'non',
-                'num_chambre': '101',
-                'mobilite': 'non',
-                'vie_associative': 'oui',
-                'bourse': 'oui',
-                'type_section': 'Interne'
-            },
-            {
-                'nom': 'Smith',
-                'prenom': 'Jane',
-                'sexe': 'F',
-                'matricule': '2024002',
-                'cin': 'CD789012',
-                'date_naissance': '2001-02-15',
-                'nationalite': 'Marocaine',
-                'telephone': '0623456789',
-                'email': 'jane.smith@example.com',
-                'annee_universitaire': '2023-2024',
-                'filiere_id': '2',  # References Mathématiques
-                'dossier_medicale': 'Aucun',
-                'observation': 'Étudiante brillante',
-                'laureat': 'oui',
-                'num_chambre': '102',
-                'mobilite': 'non',
-                'vie_associative': 'oui',
-                'bourse': 'oui',
-                'type_section': 'Interne'
-            }
-        ]
-
-        for student_data in dummy_students:
-            student.add_student(student_data)
-            
-        print("Dummy data created successfully!")
-        return True
-    except Exception as e:
-        print(f"Error creating dummy data: {e}")
-        return False
-
 def create_default_admin_user_if_not_exists():
     # Import User model locally to avoid circular import issues if any
     from models.user import User 
@@ -287,4 +163,63 @@ def create_default_admin_user_if_not_exists():
             print("Failed to create default admin user. Check logs for errors.")
     else:
         print("Admin user already exists.")
+
+def create_dummy_data():
+    """Create sample data for testing"""
+    try:
+        # Create sample filieres
+        filiere_model = Filiere()
+        filieres = [
+            "Génie Informatique",
+            "Génie Civil",
+            "Génie Mécanique",
+            "Génie Électrique",
+            "Génie Industriel"
+        ]
+        for filiere in filieres:
+            filiere_model.create_filiere(filiere)
+        
+        # Create sample rooms
+        room_model = Room()
+        for i in range(1, 21):  # Create 20 rooms
+            room_model.create_room(f"Room {i}", random.randint(2, 4))
+        
+        # Create sample users
+        user_model = User()
+        users = [
+            ("admin", "admin123", "admin"),
+            ("user1", "user123", "user"),
+            ("user2", "user123", "user")
+        ]
+        for username, password, role in users:
+            user_model.create_user(username, password, role)
+        
+        # Create sample students
+        student_model = Student()
+        first_names = ["Mohammed", "Ahmed", "Fatima", "Amina", "Youssef", "Sara", "Karim", "Laila"]
+        last_names = ["Alami", "Benani", "Cherkaoui", "Daoudi", "El Fathi", "Hassani", "Idrissi", "Kabbaj"]
+        cities = ["Casablanca", "Rabat", "Marrakech", "Fès", "Tanger", "Agadir", "Meknès", "Oujda"]
+        
+        for _ in range(50):  # Create 50 students
+            first_name = random.choice(first_names)
+            last_name = random.choice(last_names)
+            cne = f"P{random.randint(100000, 999999)}"
+            cin = f"AB{random.randint(100000, 999999)}"
+            birth_date = datetime.now() - timedelta(days=random.randint(365*18, 365*25))
+            birth_place = random.choice(cities)
+            address = f"{random.randint(1, 100)} Rue {random.choice(['Mohammed V', 'Hassan II', 'Ibn Sina', 'Al Massira'])}"
+            phone = f"06{random.randint(10000000, 99999999)}"
+            email = f"{first_name.lower()}.{last_name.lower()}@gmail.com"
+            filiere_id = random.randint(1, len(filieres))
+            academic_year = "2023/2024"
+            
+            student_model.create_student(
+                first_name, last_name, cne, cin, birth_date, birth_place,
+                address, phone, email, filiere_id, academic_year
+            )
+        
+        return True
+    except Exception as e:
+        print(f"Error creating dummy data: {e}")
+        return False
 

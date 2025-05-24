@@ -3,12 +3,13 @@
 {% block title %}Liste des Chambres{% endblock %}
 {% block content %}
 <h3 class="text-success"><i class="bi bi-door-closed"></i> Liste des Chambres</h3>
-<a href="/rooms/add" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Ajouter une chambre</a>
-<div class="d-flex gap-2 mb-3">
+<div class="d-flex gap-2 mb-3 align-items-center">
+    <a href="/rooms/add" class="btn btn-success"><i class="bi bi-plus-circle"></i> Ajouter une chambre</a>
     <a href="{{ url_for('room.export_rooms_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
     <a href="{{ url_for('room.export_rooms_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
     <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importRoomModal"><i class="bi bi-upload"></i> Importer</button>
 </div>
+
 <!-- Import Modal -->
 <div class="modal fade" id="importRoomModal" tabindex="-1" aria-labelledby="importRoomModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -20,9 +21,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <input type="file" class="form-control" name="file" accept=".xlsx" required>
+                        <input type="file" class="form-control" name="file" accept=".xlsx" required id="importRoomFile">
                     </div>
                     <a href="{{ url_for('room.download_sample_rooms_xlsx') }}" download>Télécharger un exemple</a>
+                    <div id="importRoomLoading" style="display:none;" class="text-center mt-2">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Importation...</span>
+                        </div>
+                        <div>Importation en cours...</div>
+                    </div>
+                    <div id="importRoomError" class="alert alert-danger mt-2" style="display:none;"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -32,68 +40,83 @@
         </div>
     </div>
 </div>
-<form id="bulkRoomForm" method="POST" action="{{ url_for('room.bulk_action_rooms') }}">
-<div class="d-flex gap-2 mb-2" id="bulkRoomActions" style="display:none;">
-    <button type="submit" name="bulk_action" value="delete" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer la sélection</button>
-    <button type="submit" name="bulk_action" value="export_xlsx" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exporter XLSX</button>
-    <button type="submit" name="bulk_action" value="export_pdf" class="btn btn-danger"><i class="bi bi-file-pdf"></i> Exporter PDF</button>
-</div>
+
 <table class="table">
-  <thead class="table-success">
-    <tr>
-      <th><input type="checkbox" id="selectAllRooms"></th>
-      <th>ID</th>
-      <th>Numéro</th>
-      <th>Pavillon</th>
-      <th>Type</th>
-      <th>Capacité</th>
-      <th>Occupée</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for room in rooms %}
-    <tr>
-      <td><input type="checkbox" name="selected_rooms" value="{{ room.id }}" class="room-checkbox"></td>
-      <td>{{ room.id }}</td>
-      <td>{{ room.room_number }}</td>
-      <td>{{ room.pavilion }}</td>
-      <td>{{ room.room_type }}</td>
-      <td>{{ room.capacity }}</td>
-      <td>{% if room.is_used %}Oui{% else %}Non{% endif %}</td>
-      <td>
-        <div class="btn-group" role="group">
-          <a href="/rooms/{{ room.id }}" class="btn btn-sm btn-outline-primary" title="Voir">
-            <i class="bi bi-eye"></i>
-          </a>
-          <a href="/rooms/{{ room.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
-            <i class="bi bi-pencil-square"></i>
-          </a>
-          <form action="/rooms/{{ room.id }}/delete" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette chambre ?');" title="Supprimer">
-              <i class="bi bi-trash-fill"></i>
-            </button>
-          </form>
-        </div>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
+    <thead class="table-success">
+        <tr>
+            <th>ID</th>
+            <th>Numéro</th>
+            <th>Pavillon</th>
+            <th>Type</th>
+            <th>Capacité</th>
+            <th>Occupée</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for room in rooms %}
+        <tr>
+            <td>{{ room.id }}</td>
+            <td>{{ room.room_number }}</td>
+            <td>{{ room.pavilion }}</td>
+            <td>{{ room.room_type }}</td>
+            <td>{{ room.capacity }}</td>
+            <td>{% if room.is_used %}Oui{% else %}Non{% endif %}</td>
+            <td>
+                <div class="btn-group" role="group">
+                    <a href="/rooms/{{ room.id }}" class="btn btn-sm btn-outline-primary" title="Voir">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="/rooms/{{ room.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    <form action="/rooms/{{ room.id }}/delete" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette chambre ?');" title="Supprimer">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
-</form>
+
 <script>
-const selectAll = document.getElementById('selectAllRooms');
-const checkboxes = document.querySelectorAll('.room-checkbox');
-const bulkActions = document.getElementById('bulkRoomActions');
-const form = document.getElementById('bulkRoomForm');
-function updateBulkActions() {
-  const checked = document.querySelectorAll('.room-checkbox:checked').length;
-  bulkActions.style.display = checked > 0 ? 'flex' : 'none';
+// AJAX import for rooms
+const importForm = document.querySelector('#importRoomModal form');
+const importFile = document.getElementById('importRoomFile');
+const importLoading = document.getElementById('importRoomLoading');
+const importError = document.getElementById('importRoomError');
+if(importForm) {
+    importForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        importError.style.display = 'none';
+        importLoading.style.display = 'block';
+        const formData = new FormData(importForm);
+        fetch(importForm.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json().catch(() => response.text()))
+        .then(data => {
+            importLoading.style.display = 'none';
+            if (typeof data === 'object' && data.success) {
+                location.reload();
+            } else if (typeof data === 'object' && data.error) {
+                importError.textContent = data.error;
+                importError.style.display = 'block';
+            } else {
+                // fallback: reload if not JSON
+                location.reload();
+            }
+        })
+        .catch(err => {
+            importLoading.style.display = 'none';
+            importError.textContent = 'Erreur lors de l\'importation.';
+            importError.style.display = 'block';
+        });
+    });
 }
-selectAll.addEventListener('change', function() {
-  checkboxes.forEach(cb => { cb.checked = selectAll.checked; });
-  updateBulkActions();
-});
-checkboxes.forEach(cb => cb.addEventListener('change', updateBulkActions));
 </script>
 {% endblock %}

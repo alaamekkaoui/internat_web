@@ -72,6 +72,18 @@ class Student:
             if not student_data.get(k):
                 student_data[k] = v
 
+        # Convert any NaN values to None (for Excel import)
+        import math
+        for k, v in student_data.items():
+            if isinstance(v, float) and math.isnan(v):
+                student_data[k] = None
+            elif isinstance(v, str) and v.strip().lower() == 'nan':
+                student_data[k] = None
+
+        # Ensure filiere_id is None if missing or empty
+        if not student_data.get('filiere_id') or str(student_data.get('filiere_id')).strip() in ('', 'None', 'none', 'null'):
+            student_data['filiere_id'] = None
+
         query = """
         INSERT INTO students (
             nom, prenom, matricule, cin, date_naissance, nationalite,
