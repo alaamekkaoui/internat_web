@@ -11,16 +11,40 @@ from werkzeug.utils import secure_filename
 from utilities.file_utils import handle_file_upload
 from controllers.filiere_controller import FiliereController
 from controllers.room_controller import RoomController
+from utilities.sample_utils import generate_sample_students_xlsx
+from math import isnan
+
 student_bp = Blueprint('student', __name__)
 student_controller = StudentController()
 
 @student_bp.route('/students', methods=['GET'])
 def list_students():
-    result = student_controller.list_students()
-    if 'error' in result:
-        flash(result['error'], 'danger')
-        return render_template('student/list.html', students=[])
-    return render_template('student/list.html', students=result)
+    # Get filter params
+    type_section = request.args.get('type_section', '')
+    keyword = request.args.get('keyword', '')
+    chambre = request.args.get('chambre', '')
+    students = student_controller.list_students()
+    # Filter by type_section if set
+    if type_section:
+        students = [s for s in students if s.get('type_section') == type_section]
+    # Filter by keyword if set
+    if keyword:
+        students = [s for s in students if keyword.lower() in (s.get('nom','').lower() + s.get('prenom','').lower() + s.get('matricule','').lower())]
+    # Filter by chambre if set
+    if chambre:
+        students = [s for s in students if (s.get('num_chambre') == chambre) or (chambre == 'Aucune' and (s.get('num_chambre') in [None, '', 'no room']))]
+    # Mark 'Aucune' for students with no room for display, and add pavillon
+    for s in students:
+        if s.get('num_chambre') in [None, '', 'no room']:
+            s['num_chambre'] = 'Aucune'
+            s['pavilion'] = ''
+        else:
+            # Find the room to get the pavilion
+            from controllers.room_controller import RoomController
+            rooms = RoomController().list_rooms()
+            room = next((r for r in rooms if r.get('room_number') == s['num_chambre']), None)
+            s['pavilion'] = room['pavilion'] if room else ''
+    return render_template('student/list.html', students=students)
 
 @student_bp.route('/students/add', methods=['GET', 'POST'])
 @login_required
@@ -66,10 +90,7 @@ def delete_student(student_id):
 def export_students_xlsx():
     try:
         students = student_controller.list_students()
-        folder = 'static/xlsx'
-        os.makedirs(folder, exist_ok=True)
-        filename = 'students.xlsx'
-        return export_xlsx(students, filename, folder)
+        return export_xlsx(students, filename='students.xlsx')
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('student.list_students'))
@@ -78,9 +99,44 @@ def export_students_xlsx():
 @login_required # Assuming import is a modification action
 def import_students_xlsx():
     try:
+        intern_type = request.form.get('import_type_section', '')
         file = request.files['file']
         data = import_xlsx(file)
+        required_fields = [
+            'matricule', 'cin', 'nom', 'prenom', 'date_naissance', 'sexe', 'nationalite',
+            'telephone', 'email', 'annee_universitaire', 'filiere_id', 'dossier_medicale',
+            'observation', 'laureat', 'num_chambre', 'mobilite', 'vie_associative',
+            'bourse', 'photo', 'type_section'
+        ]
+        # Clean and convert all data before adding
+        cleaned_students = []
         for student in data:
+            # Set intern type if specified
+            if intern_type:
+                student['type_section'] = intern_type
+            # Check for empty required fields and nan
+            for field in required_fields:
+                value = student.get(field, None)
+                if value is None or value == '' or (isinstance(value, float) and (value != value or isnan(value))):
+                    if field == 'date_naissance':
+                        student[field] = '01-01-0001'
+                    else:
+                        student[field] = 'Non trouvé'
+            # Normalize 'sexe' field to 'M' or 'F' for DB
+            sexe_val = str(student.get('sexe', '')).strip().lower()
+            if sexe_val in ['m', 'male', 'homme', 'h']:
+                student['sexe'] = 'M'
+            elif sexe_val in ['f', 'female', 'femme']:
+                student['sexe'] = 'F'
+            else:
+                student['sexe'] = 'Non trouvé'
+            cleaned_students.append(student)
+        # Save cleaned data for debugging
+        import json
+        with open('imported_students_debug.json', 'w', encoding='utf-8') as f:
+            json.dump(cleaned_students, f, ensure_ascii=False, indent=2)
+        # Now add students
+        for student in cleaned_students:
             student_controller.add_student(student)
         flash('Students imported successfully!', 'success')
         return redirect(url_for('student.list_students'))
@@ -91,26 +147,17 @@ def import_students_xlsx():
 @student_bp.route('/students/export/pdf', methods=['GET'])
 def export_students_pdf():
     try:
-        # Get all students
         students = student_controller.list_students()
         if isinstance(students, dict) and 'error' in students:
             flash(students['error'], 'danger')
             return redirect(url_for('student.list_students'))
-
-        # Create PDF directory if it doesn't exist
-        pdf_dir = 'static/pdfs'
-        os.makedirs(pdf_dir, exist_ok=True)
-        pdf_path = os.path.join(pdf_dir, 'students.pdf')
-
-        # Generate PDF
-        pdf_file = export_pdf(students, pdf_path)
-        if not pdf_file:
+        from utilities.pdf_utils import export_pdf
+        pdf_buffer = export_pdf(students)
+        if not pdf_buffer:
             flash('Error generating PDF', 'danger')
             return redirect(url_for('student.list_students'))
-
-        # Return the PDF file
         return send_file(
-            pdf_path,
+            pdf_buffer,
             as_attachment=True,
             download_name='students.pdf',
             mimetype='application/pdf'
@@ -175,7 +222,7 @@ def modify_student(student_id):
             student = student_controller.get_student(student_id)
             return render_template('student/edit.html', student=student, filieres=filieres, rooms=rooms)
         flash('Student updated successfully!', 'success')
-        return redirect(url_for('student.list_students'))
+        return redirect(url_for('student.student_profile', student_id=student_id))
     # GET request - show edit form
     student = student_controller.get_student(student_id)
     if 'error' in student:
@@ -219,3 +266,7 @@ def export_pdf(student_id):
     except Exception as e:
         flash(f'Erreur lors de la génération du PDF: {str(e)}', 'error')
         return redirect(url_for('student.profile', student_id=student_id))
+
+@student_bp.route('/students/sample-xlsx', methods=['GET'])
+def download_sample_students_xlsx():
+    return generate_sample_students_xlsx()

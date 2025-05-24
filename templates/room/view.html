@@ -6,7 +6,7 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header">
                     <h3 class="mb-0">
                         <i class="bi bi-door-closed"></i> Détails de la Chambre
                     </h3>
@@ -80,13 +80,13 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ url_for('room.edit_room', room_id=room.id) }}" class="btn btn-warning">
+                        <a href="{{ url_for('room.edit_room', room_id=room.id) }}" class="btn btn-outline-warning">
                             <i class="bi bi-pencil"></i> Modifier
                         </a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                             <i class="bi bi-trash"></i> Supprimer
                         </button>
-                        <a href="{{ url_for('room.list_rooms') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('room.list_rooms') }}" class="btn btn-outline-success">
                             <i class="bi bi-arrow-left"></i> Retour à la liste
                         </a>
                     </div>
@@ -116,4 +116,38 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block css %}
+<style>
+.card-header {
+    background: rgba(167,198,54,0.1) !important;
+    color: #145A32 !important;
+    border-bottom: 1px solid #A7C636;
+}
+.btn-outline-success {
+    border-color: #28a745;
+    color: #28a745;
+}
+.btn-outline-success:hover {
+    background: #28a745;
+    color: #fff;
+}
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+.btn-outline-danger:hover {
+    background: #dc3545;
+    color: #fff;
+}
+.btn-outline-warning {
+    border-color: #ffc107;
+    color: #ffc107;
+}
+.btn-outline-warning:hover {
+    background: #ffc107;
+    color: #000;
+}
+</style>
 {% endblock %}

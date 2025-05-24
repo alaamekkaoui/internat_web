@@ -1,4 +1,5 @@
 # utilities/pdf_utils.py
+import io
 import os
 from flask import send_file
 from reportlab.lib import colors
@@ -9,20 +10,26 @@ from reportlab.lib.units import inch
 from datetime import datetime
 import tempfile
 
-def export_pdf(data, pdf_path):
-    """Generate a PDF file with student data and IAV logo."""
+def export_pdf(data):
+    """Generate a PDF file with student data and IAV logo, return as BytesIO."""
+    import io
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.units import inch
+    from reportlab.lib import colors
+    from datetime import datetime
+    import os
+    buffer = io.BytesIO()
     try:
-        # Create the PDF document
         doc = SimpleDocTemplate(
-            pdf_path,
+            buffer,
             pagesize=letter,
             rightMargin=72,
             leftMargin=72,
             topMargin=72,
             bottomMargin=72
         )
-
-        # Create styles
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CustomTitle',
@@ -30,23 +37,15 @@ def export_pdf(data, pdf_path):
             fontSize=24,
             spaceAfter=30
         )
-
-        # Create the content
         content = []
-
-        # Add IAV logo at the top
         logo_path = os.path.join(os.path.dirname(__file__), '../static/images/iav.png')
         if os.path.exists(logo_path):
             img = Image(logo_path, width=1.5*inch, height=1.5*inch)
             img.hAlign = 'CENTER'
             content.append(img)
             content.append(Spacer(1, 12))
-
-        # Add title
         content.append(Paragraph("Liste des Étudiants", title_style))
         content.append(Spacer(1, 20))
-
-        # Add generation date
         date_style = ParagraphStyle(
             'DateStyle',
             parent=styles['Normal'],
@@ -55,20 +54,20 @@ def export_pdf(data, pdf_path):
         )
         content.append(Paragraph(f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}", date_style))
         content.append(Spacer(1, 20))
-
-        # Prepare table data
-        table_data = [['Matricule', 'Nom', 'Prénom', 'Filière', 'Chambre']]
+        table_data = [['Matricule', 'Nom Complet', 'Type Internat', 'Année universitaire', 'Chambre']]
         for student in data:
+            nom_complet = f"{student.get('nom', '')} {student.get('prenom', '')}"
+            type_section = student.get('type_section', '') or 'Non spécifié'
+            annee_universitaire = student.get('annee_universitaire', '') or 'Non spécifiée'
+            num_chambre = student.get('num_chambre') if student.get('num_chambre') not in [None, '', 'no room'] else 'Aucune'
             table_data.append([
-                student['matricule'],
-                student['nom'],
-                student['prenom'],
-                student.get('filiere_name', ''),
-                student.get('num_chambre', '')
+                student.get('matricule', ''),
+                nom_complet,
+                type_section,
+                annee_universitaire,
+                num_chambre
             ])
-
-        # Create table
-        table = Table(table_data, colWidths=[1.2*inch, 1.5*inch, 1.5*inch, 2*inch, 1*inch])
+        table = Table(table_data, colWidths=[1.2*inch, 2.5*inch, 1.5*inch, 1.5*inch, 1.2*inch])
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -84,15 +83,13 @@ def export_pdf(data, pdf_path):
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
-
         content.append(table)
-
-        # Build the PDF
         doc.build(content)
-        return True
+        buffer.seek(0)
+        return buffer
     except Exception as e:
         print(f"Error generating PDF: {e}")
-        return False
+        return None
 
 def save_pdf(pdf_folder, filename, pdf_stream):
     """Save a PDF stream to a file."""

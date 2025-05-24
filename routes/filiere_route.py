@@ -3,6 +3,7 @@ from controllers.filiere_controller import FiliereController
 from utilities.xlsx_utils import export_xlsx, import_xlsx
 from utilities.pdf_utils import export_pdf
 from utils.decorators import login_required, role_required # Corrected path
+from utilities.sample_filiere_utils import generate_sample_filieres_xlsx
 import os
 
 filiere_bp = Blueprint('filiere', __name__)
@@ -105,20 +106,33 @@ def export_filieres_xlsx():
         return redirect(url_for('filiere.list_filieres'))
 
 @filiere_bp.route('/filieres/import/xlsx', methods=['POST'])
-@login_required # Assuming import is a modification action
+@login_required
 def import_filieres_xlsx():
-    try:
-        file = request.files['file']
-        data = import_xlsx(file)
-        for filiere_data in data: # Renamed to avoid conflict
-            # Skip header or invalid rows
-            if filiere_data.get('name', '').lower() != 'name' and filiere_data.get('id', '').lower() != 'id':
-                filiere_controller.add_filiere(filiere_data)
-        flash('Filières importées avec succès!', 'success')
-        return redirect(url_for('filiere.list_filieres'))
-    except Exception as e:
-        flash(str(e), 'danger')
-        return redirect(url_for('filiere.list_filieres'))
+    from utilities.xlsx_utils import import_xlsx
+    file = request.files['file']
+    data = import_xlsx(file)
+    required_fields = ['name']
+    cleaned_filieres = []
+    for filiere in data:
+        for field in required_fields:
+            value = filiere.get(field, None)
+            if value is None or value == '' or (isinstance(value, float) and (value != value)):
+                filiere[field] = 'Non trouvé'
+        cleaned_filieres.append(filiere)
+    # Save or update filieres in DB
+    from controllers.filiere_controller import FiliereController
+    filiere_controller = FiliereController()
+    imported_count = 0
+    for filiere in cleaned_filieres:
+        try:
+            # Optionally, check for duplicates by name before adding
+            filiere_controller.add_filiere(filiere)
+            imported_count += 1
+        except Exception as e:
+            print(f"Erreur lors de l'import de la filière: {filiere.get('name', '')} - {e}")
+            continue
+    flash(f'{imported_count} filières importées avec succès!', 'success')
+    return redirect(url_for('filiere.list_filieres'))
 
 @filiere_bp.route('/filieres/export/pdf', methods=['GET'])
 def export_filieres_pdf():
@@ -139,3 +153,7 @@ def export_filieres_pdf():
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('filiere.list_filieres'))
+
+@filiere_bp.route('/filieres/sample-xlsx', methods=['GET'])
+def download_sample_filieres_xlsx():
+    return generate_sample_filieres_xlsx()

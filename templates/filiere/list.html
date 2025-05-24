@@ -4,6 +4,35 @@
 {% block content %}
 <h3 class="text-success"><i class="bi bi-diagram-3"></i> Liste des Filières</h3>
 <a href="/filieres/add" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Ajouter une filière</a>
+<div class="d-flex gap-2">
+    <a href="{{ url_for('filiere.export_filieres_pdf') }}" class="btn btn-outline-danger"><i class="bi bi-file-pdf"></i> PDF</a>
+    <a href="{{ url_for('filiere.export_filieres_xlsx') }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel-fill"></i> XLSX</a>
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importFiliereModal"><i class="bi bi-upload"></i> Importer</button>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importFiliereModal" tabindex="-1" aria-labelledby="importFiliereModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ url_for('filiere.import_filieres_xlsx') }}" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importFiliereModalLabel">Importer des filières (XLSX)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <input type="file" class="form-control" name="file" accept=".xlsx" required>
+                    </div>
+                    <a href="{{ url_for('filiere.download_sample_filieres_xlsx') }}" download>Télécharger un exemple</a>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-upload"></i> Importer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <table class="table">
   <thead class="table-success">
     <tr>
@@ -20,10 +49,16 @@
       <td>{{ filiere.name }}</td>
       <td>{{ filiere.created_at }}</td>
       <td>
-        <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-warning"><i class="bi bi-pencil"></i></a>
-        <form action="/filieres/{{ filiere.id }}" method="POST" style="display:inline;">
-          <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Supprimer cette filière ?');"><i class="bi bi-trash"></i></button>
-        </form>
+        <div class="btn-group" role="group">
+          <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
+            <i class="bi bi-pencil-square"></i>
+          </a>
+          <form action="/filieres/{{ filiere.id }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          </form>
+        </div>
       </td>
     </tr>
     {% endfor %}

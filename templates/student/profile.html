@@ -7,13 +7,13 @@
     <div class="row">
         <div class="col-md-12">
             <div class="card">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: rgba(167,198,54,0.1); color: #145A32; border-bottom: 1px solid #A7C636;">
                     <h3 class="mb-0">
                         <i class="bi bi-person"></i> Profil de l'étudiant
                     </h3>
                     <div>
-                        <a href="{{ url_for('student.export_pdf', student_id=student.id) }}" class="btn btn-light" target="_blank">
-                            <i class="bi bi-file-pdf"></i> Exporter en PDF
+                        <a href="{{ url_for('student.export_pdf', student_id=student.id) }}" class="btn btn-outline-danger" target="_blank">
+                            <i class="bi bi-file-pdf"></i> PDF
                         </a>
                     </div>
                 </div>
@@ -24,7 +24,7 @@
                                 {% if student.photo %}
                                     <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" 
                                          alt="Photo de {{ student.prenom }} {{ student.nom }}" 
-                                         class="img-fluid rounded mb-3" 
+                                         class="img-fluid rounded mb-3 border border-success" 
                                          style="max-width: 200px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
                                 {% else %}
                                     <div class="bg-light rounded mb-3" style="width: 200px; height: 200px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
@@ -35,7 +35,6 @@
                                 <p class="text-muted">{{ student.matricule }}</p>
                             </div>
                         </div>
-                        
                         <div class="col-md-8">
                             <div class="row">
                                 <div class="col-md-6">
@@ -45,34 +44,13 @@
                                         </div>
                                         <div class="card-body">
                                             <table class="table table-borderless">
-                                                <tr>
-                                                    <th>Nom:</th>
-                                                    <td>{{ student.nom }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Prénom:</th>
-                                                    <td>{{ student.prenom }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Matricule:</th>
-                                                    <td>{{ student.matricule }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>CIN:</th>
-                                                    <td>{{ student.cin }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Sexe:</th>
-                                                    <td>{{ student.sexe }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Date de naissance:</th>
-                                                    <td>{{ student.date_naissance }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Nationalité:</th>
-                                                    <td>{{ student.nationalite }}</td>
-                                                </tr>
+                                                <tr><th>Nom:</th><td>{{ student.nom }}</td></tr>
+                                                <tr><th>Prénom:</th><td>{{ student.prenom }}</td></tr>
+                                                <tr><th>Matricule:</th><td>{{ student.matricule }}</td></tr>
+                                                <tr><th>CIN:</th><td>{{ student.cin }}</td></tr>
+                                                <tr><th>Sexe:</th><td>{{ student.sexe }}</td></tr>
+                                                <tr><th>Date de naissance:</th><td>{{ student.date_naissance }}</td></tr>
+                                                <tr><th>Nationalité:</th><td>{{ student.nationalite }}</td></tr>
                                             </table>
                                         </div>
                                     </div>
@@ -84,34 +62,13 @@
                                         </div>
                                         <div class="card-body">
                                             <table class="table table-borderless">
-                                                <tr>
-                                                    <th>Filière:</th>
-                                                    <td>{{ student.filiere_name }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Année universitaire:</th>
-                                                    <td>{{ student.annee_universitaire }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Chambre:</th>
-                                                    <td>{{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Internat:</th>
-                                                    <td>{{ student.type_section }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Mobilité:</th>
-                                                    <td>{{ student.mobilite }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Vie associative:</th>
-                                                    <td>{{ student.vie_associative }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Bourse:</th>
-                                                    <td>{{ student.bourse }}</td>
-                                                </tr>
+                                                <tr><th>Filière:</th><td>{{ student.filiere_name }}</td></tr>
+                                                <tr><th>Année universitaire:</th><td>{{ student.annee_universitaire }}</td></tr>
+                                                <tr><th>Chambre:</th><td>{{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</td></tr>
+                                                <tr><th>Internat:</th><td>{{ student.type_section }}</td></tr>
+                                                <tr><th>Mobilité:</th><td>{{ student.mobilite }}</td></tr>
+                                                <tr><th>Vie associative:</th><td>{{ student.vie_associative }}</td></tr>
+                                                <tr><th>Bourse:</th><td>{{ student.bourse }}</td></tr>
                                             </table>
                                         </div>
                                     </div>
@@ -119,15 +76,14 @@
                             </div>
                         </div>
                     </div>
-
                     <div class="mt-4 text-center">
-                        <a href="{{ url_for('student.modify_student', student_id=student.id) }}" class="btn btn-warning">
+                        <a href="{{ url_for('student.modify_student', student_id=student.id) }}" class="btn btn-outline-warning">
                             <i class="bi bi-pencil"></i> Modifier
                         </a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                             <i class="bi bi-trash"></i> Supprimer
                         </button>
-                        <a href="{{ url_for('student.list_students') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('student.list_students') }}" class="btn btn-outline-success">
                             <i class="bi bi-arrow-left"></i> Retour à la liste
                         </a>
                     </div>
@@ -149,13 +105,47 @@
                 Êtes-vous sûr de vouloir supprimer cet étudiant ?
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
                 <form action="{{ url_for('student.delete_student', student_id=student.id) }}" method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-danger">Supprimer</button>
+                    <button type="submit" class="btn btn-outline-danger">Supprimer</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block css %}
+<style>
+.card-header {
+    background: rgba(167,198,54,0.1) !important;
+    color: #145A32 !important;
+    border-bottom: 1px solid #A7C636;
+}
+.btn-outline-success {
+    border-color: #28a745;
+    color: #28a745;
+}
+.btn-outline-success:hover {
+    background: #28a745;
+    color: #fff;
+}
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+.btn-outline-danger:hover {
+    background: #dc3545;
+    color: #fff;
+}
+.btn-outline-warning {
+    border-color: #ffc107;
+    color: #ffc107;
+}
+.btn-outline-warning:hover {
+    background: #ffc107;
+    color: #000;
+}
+</style>
 {% endblock %}
 
