@@ -304,7 +304,7 @@ def export_pdf(student_id):
         )
     except Exception as e:
         flash(f'Erreur lors de la génération du PDF: {str(e)}', 'error')
-        return redirect(url_for('student.profile', student_id=student_id))
+        return redirect(url_for('student.student_profile', student_id=student_id))
 
 @student_bp.route('/students/sample-xlsx', methods=['GET'])
 def download_sample_students_xlsx():

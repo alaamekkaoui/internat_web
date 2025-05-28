@@ -2,219 +2,177 @@
 import io
 import os
 from flask import send_file
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
 from datetime import datetime
 import tempfile
+from fpdf import FPDF
+import arabic_reshaper
+from bidi.algorithm import get_display
+
+# Font and image paths
+AMIRI_FONT_PATH = os.path.join(os.path.dirname(__file__), '../static/font/Amiri-Regular.ttf')
+LOGO_PATH = os.path.join(os.path.dirname(__file__), '../static/images/iav.png')
+
+# Arabic RTL helper
+def shape_arabic(text):
+    try:
+        reshaped = arabic_reshaper.reshape(text)
+        return get_display(reshaped)
+    except Exception:
+        return text
+
+class CustomPDF(FPDF):
+    def header(self):
+        logo_h = 22
+        logo_w = 22
+        logo_y = 12
+        center_x = self.w / 2
+
+        # Draw logo
+        if os.path.exists(LOGO_PATH):
+            self.image(LOGO_PATH, x=center_x - logo_w / 2, y=logo_y, w=logo_w, h=logo_h)
+
+        left_x = 10
+        right_x = center_x + logo_w / 2 + 4
+        logo_left = center_x - logo_w / 2 - 4
+        text_y = logo_y + 1
+        text_h = 8
+
+        # Use Amiri if available
+        if os.path.exists(AMIRI_FONT_PATH):
+            if 'Amiri' not in self.fonts:
+                self.add_font('Amiri', '', AMIRI_FONT_PATH, uni=True)
+            self.set_font('Amiri', '', 14)
+        else:
+            self.set_font('Helvetica', 'B', 13)
+
+        # French text (2 lines on the left)
+        self.set_xy(left_x, text_y)
+        self.multi_cell(logo_left - left_x, text_h, 
+            "Institut Agronomique et Vétérinaire\nHassan II", align='L')
+
+        # Arabic (right)
+        self.set_xy(right_x, text_y + 2)  # Slight vertical adjustment
+        arabic_text = shape_arabic('معهد الحسن الثاني للزراعة والبيطرة')
+        self.cell(self.w - right_x - 10, text_h * 2, arabic_text, ln=0, align='R')
+
+        self.ln(logo_h + 8)
+
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Helvetica', '', 8)
+        year = datetime.now().year
+        footer_text = f"Copyright © {year} IAV HASSAN II. Tous les droits réservés. Mentions légales"
+        self.cell(0, 10, footer_text, 0, 0, 'C')
 
 def export_pdf(data):
-    """Generate a PDF file with student data and IAV logo, return as BytesIO."""
-    import io
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
-    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-    from reportlab.lib.pagesizes import letter
-    from reportlab.lib.units import inch
-    from reportlab.lib import colors
-    from datetime import datetime
-    import os
-    buffer = io.BytesIO()
-    try:
-        doc = SimpleDocTemplate(
-            buffer,
-            pagesize=letter,
-            rightMargin=72,
-            leftMargin=72,
-            topMargin=72,
-            bottomMargin=72
-        )
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            spaceAfter=30
-        )
-        content = []
-        logo_path = os.path.join(os.path.dirname(__file__), '../static/images/iav.png')
-        if os.path.exists(logo_path):
-            img = Image(logo_path, width=1.5*inch, height=1.5*inch)
-            img.hAlign = 'CENTER'
-            content.append(img)
-            content.append(Spacer(1, 12))
-        content.append(Paragraph("Liste des Étudiants", title_style))
-        content.append(Spacer(1, 20))
-        date_style = ParagraphStyle(
-            'DateStyle',
-            parent=styles['Normal'],
-            fontSize=10,
-            textColor=colors.gray
-        )
-        content.append(Paragraph(f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}", date_style))
-        content.append(Spacer(1, 20))
-        table_data = [['Matricule', 'Nom Complet', 'Type Internat', 'Année universitaire', 'Chambre']]
-        for student in data:
-            nom_complet = f"{student.get('nom', '')} {student.get('prenom', '')}"
-            type_section = student.get('type_section', '') or 'Non spécifié'
-            annee_universitaire = student.get('annee_universitaire', '') or 'Non spécifiée'
-            num_chambre = student.get('num_chambre') if student.get('num_chambre') not in [None, '', 'no room'] else 'Aucune'
-            table_data.append([
-                student.get('matricule', ''),
-                nom_complet,
-                type_section,
-                annee_universitaire,
-                num_chambre
-            ])
-        table = Table(table_data, colWidths=[1.2*inch, 2.5*inch, 1.5*inch, 1.5*inch, 1.2*inch])
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 10),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ]))
-        content.append(table)
-        doc.build(content)
-        buffer.seek(0)
-        return buffer
-    except Exception as e:
-        print(f"Error generating PDF: {e}")
-        return None
+    pdf = CustomPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    if os.path.exists(AMIRI_FONT_PATH):
+        pdf.add_font('Amiri', '', AMIRI_FONT_PATH, uni=True)
+    pdf.add_page()
+
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 12, 'Liste des Étudiants', ln=1, align='C')
+    pdf.set_font('Helvetica', '', 10)
+    pdf.cell(0, 8, f"Généré le: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=1, align='C')
+    pdf.ln(5)
+
+    headers = ['Matricule', 'Nom Complet', 'Type Internat', 'Année universitaire', 'Chambre']
+    col_widths = [30, 50, 35, 40, 25]
+    pdf.set_fill_color(200, 200, 200)
+    pdf.set_font('Helvetica', 'B', 11)
+
+    for i, header in enumerate(headers):
+        pdf.cell(col_widths[i], 10, header, border=1, align='C', fill=True)
+    pdf.ln()
+
+    pdf.set_font('Helvetica', '', 10)
+    pdf.set_fill_color(245, 245, 245)
+    fill = False
+    for student in data:
+        nom_complet = f"{student.get('nom', '')} {student.get('prenom', '')}"
+        type_section = student.get('type_section', '') or 'Non spécifié'
+        annee = student.get('annee_universitaire', '') or 'Non spécifiée'
+        chambre = student.get('num_chambre') if student.get('num_chambre') not in [None, '', 'no room'] else 'Aucune'
+        row = [
+            str(student.get('matricule', '')),
+            nom_complet,
+            type_section,
+            annee,
+            str(chambre)
+        ]
+        for i, val in enumerate(row):
+            pdf.cell(col_widths[i], 9, val, border=1, align='C', fill=fill)
+        pdf.ln()
+        fill = not fill
+
+    output = io.BytesIO()
+    pdf.output(output)
+    output.seek(0)
+    return output
 
 def save_pdf(pdf_folder, filename, pdf_stream):
-    """Save a PDF stream to a file."""
-    pdf_path = os.path.join(pdf_folder, filename)
-    with open(pdf_path, 'wb') as f:
+    path = os.path.join(pdf_folder, filename)
+    with open(path, 'wb') as f:
         f.write(pdf_stream.read())
-    return pdf_path
+    return path
 
 def generate_student_pdf(student):
-    """Generate a PDF file for student profile"""
-    # Create a temporary file
     temp_dir = tempfile.gettempdir()
-    pdf_path = os.path.join(temp_dir, f"student_profile_{student['id']}.pdf")
-    
-    # Create the PDF document
-    doc = SimpleDocTemplate(
-        pdf_path,
-        pagesize=letter,
-        rightMargin=72,
-        leftMargin=72,
-        topMargin=72,
-        bottomMargin=72
-    )
-    
-    # Container for the 'Flowable' objects
-    elements = []
-    styles = getSampleStyleSheet()
-    
-    # Add IAV logo at the top
-    logo_path = os.path.join(os.path.dirname(__file__), '../static/images/iav.png')
-    if os.path.exists(logo_path):
-        img = Image(logo_path, width=1.5*inch, height=1.5*inch)
-        img.hAlign = 'CENTER'
-        elements.append(img)
-        elements.append(Spacer(1, 12))
-    
-    # Add title
-    title_style = ParagraphStyle(
-        'CustomTitle',
-        parent=styles['Heading1'],
-        fontSize=24,
-        spaceAfter=30,
-        alignment=1  # Center alignment
-    )
-    elements.append(Paragraph(f"Profil de l'étudiant", title_style))
-    elements.append(Spacer(1, 20))
-    
-    # Add student photo if exists
+    path = os.path.join(temp_dir, f"student_profile_{student['id']}.pdf")
+    pdf = CustomPDF()
+    pdf.set_auto_page_break(auto=True, margin=20)
+    if os.path.exists(AMIRI_FONT_PATH):
+        pdf.add_font('Amiri', '', AMIRI_FONT_PATH, uni=True)
+    pdf.add_page()
+
+    pdf.set_font('Helvetica', 'B', 16)
+    pdf.cell(0, 12, "Profil de l'étudiant", ln=1, align='C')
+    pdf.ln(5)
+
     if student.get('photo'):
         photo_path = os.path.join('static', 'uploads', student['photo'])
         if os.path.exists(photo_path):
-            img = Image(photo_path, width=2*inch, height=2*inch)
-            img.hAlign = 'CENTER'
-            elements.append(img)
-            elements.append(Spacer(1, 20))
-    
-    # Add student name and matricule
-    name_style = ParagraphStyle(
-        'NameStyle',
-        parent=styles['Heading2'],
-        fontSize=18,
-        spaceAfter=10,
-        alignment=1
-    )
-    elements.append(Paragraph(f"{student['prenom']} {student['nom']}", name_style))
-    elements.append(Paragraph(f"Matricule: {student['matricule']}", styles['Normal']))
-    elements.append(Spacer(1, 20))
-    
-    # Personal Information
-    elements.append(Paragraph("Informations personnelles", styles['Heading2']))
-    personal_data = [
-        ['Nom:', student['nom']],
-        ['Prénom:', student['prenom']],
-        ['CIN:', student['cin']],
-        ['Sexe:', student['sexe']],
-        ['Date de naissance:', student['date_naissance']],
-        ['Nationalité:', student['nationalite']]
+            pdf.image(photo_path, x=(pdf.w - 40) / 2, w=40, h=40)
+            pdf.ln(25)
+
+    pdf.set_font('Helvetica', 'B', 13)
+    pdf.cell(0, 10, f"{student['prenom']} {student['nom']}", ln=1, align='C')
+    pdf.set_font('Helvetica', '', 11)
+    pdf.cell(0, 8, f"Matricule: {student['matricule']}", ln=1, align='C')
+    pdf.ln(5)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 10, "Informations personnelles", ln=1)
+    pdf.set_font('Helvetica', '', 11)
+    personal = [
+        ('Nom:', student['nom']),
+        ('Prénom:', student['prenom']),
+        ('CIN:', student['cin']),
+        ('Sexe:', student['sexe']),
+        ('Date de naissance:', student['date_naissance']),
+        ('Nationalité:', student['nationalite']),
     ]
-    
-    # Academic Information
-    elements.append(Spacer(1, 20))
-    elements.append(Paragraph("Informations académiques", styles['Heading2']))
-    academic_data = [
-        ['Filière:', student.get('filiere_name', 'Non spécifiée')],
-        ['Année universitaire:', student['annee_universitaire']],
-        ['Chambre:', student['num_chambre'] if student['num_chambre'] not in [None, '', 'no room'] else 'Aucune'],
-        ['Internat:', student['type_section']],
-        ['Mobilité:', student['mobilite']],
-        ['Vie associative:', student['vie_associative']],
-        ['Bourse:', student['bourse']]
+    for label, value in personal:
+        pdf.cell(45, 8, label, border=0)
+        pdf.cell(0, 8, str(value), border=0, ln=1)
+    pdf.ln(5)
+
+    pdf.set_font('Helvetica', 'B', 12)
+    pdf.cell(0, 10, "Informations académiques", ln=1)
+    pdf.set_font('Helvetica', '', 11)
+    academic = [
+        ('Filière:', student.get('filiere_name', 'Non spécifiée')),
+        ('Année universitaire:', student['annee_universitaire']),
+        ('Chambre:', student['num_chambre'] if student['num_chambre'] not in [None, '', 'no room'] else 'Aucune'),
+        ('Internat:', student['type_section']),
+        ('Mobilité:', student['mobilite']),
+        ('Vie associative:', student['vie_associative']),
+        ('Bourse:', student['bourse']),
     ]
-    
-    # Create tables with improved styling
-    table_style = TableStyle([
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-        ('TOPPADDING', (0, 0), (-1, -1), 12),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-    ])
-    
-    # Add tables to elements
-    elements.append(Table(personal_data, colWidths=[2*inch, 4*inch], style=table_style))
-    elements.append(Spacer(1, 20))
-    elements.append(Table(academic_data, colWidths=[2*inch, 4*inch], style=table_style))
-    
-    # Add footer with date and IAV information
-    elements.append(Spacer(1, 30))
-    footer_style = ParagraphStyle(
-        'FooterStyle',
-        parent=styles['Normal'],
-        fontSize=8,
-        textColor=colors.grey,
-        alignment=1
-    )
-    elements.append(Paragraph(
-        f"Institut Agronomique et Vétérinaire Hassan II - {datetime.now().strftime('%d/%m/%Y à %H:%M')}",
-        footer_style
-    ))
-    
-    # Build the PDF
-    doc.build(elements)
-    
-    return pdf_path
+    for label, value in academic:
+        pdf.cell(45, 8, label, border=0)
+        pdf.cell(0, 8, str(value), border=0, ln=1)
+
+    pdf.output(path)
+    return path
