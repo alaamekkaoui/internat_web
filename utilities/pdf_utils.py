@@ -26,8 +26,6 @@ class CustomPDF(FPDF):
         logo_w = 22
         logo_y = 12
         center_x = self.w / 2
-
-        # Draw logo
         if os.path.exists(LOGO_PATH):
             self.image(LOGO_PATH, x=center_x - logo_w / 2, y=logo_y, w=logo_w, h=logo_h)
 
