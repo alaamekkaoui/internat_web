@@ -37,7 +37,6 @@ class CustomPDF(FPDF):
         text_y = logo_y + 1
         text_h = 8
 
-        # Use Amiri if available
         if os.path.exists(AMIRI_FONT_PATH):
             if 'Amiri' not in self.fonts:
                 self.add_font('Amiri', '', AMIRI_FONT_PATH, uni=True)
