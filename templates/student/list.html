@@ -19,12 +19,19 @@
     <div class="col-md-2">
         <select class="form-select" name="chambre" onchange="this.form.submit()">
             <option value="">Toutes les chambres</option>
-            <option value="no room" {% if request.args.get('chambre') == 'no room' %}selected{% endif %}>Aucune chambre</option>
-            <option value="sans_chambre" {% if request.args.get('chambre') == 'sans_chambre' %}selected{% endif %}>Sans chambre</option>
             {% for student in students %}
-                {% if student.num_chambre and student.num_chambre not in [None, '', 'no room'] %}
+                {% if student.num_chambre and student.num_chambre not in [None, '', 'no room', 'Aucune'] %}
                     <option value="{{ student.num_chambre }}" {% if request.args.get('chambre') == student.num_chambre|string %}selected{% endif %}>{{ student.num_chambre }}</option>
                 {% endif %}
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select class="form-select" name="pavilion" onchange="this.form.submit()">
+            <option value="">Tous les pavillons</option>
+            {% set pavilions = students|map(attribute='pavilion')|select|unique|list %}
+            {% for pav in pavilions %}
+                <option value="{{ pav }}" {% if request.args.get('pavilion') == pav %}selected{% endif %}>{{ pav }}</option>
             {% endfor %}
         </select>
     </div>
@@ -33,6 +40,7 @@
             <option value="">Tous les internats</option>
             <option value="APESA" {% if request.args.get('type_section') == 'APESA' %}selected{% endif %}>APESA</option>
             <option value="IAV" {% if request.args.get('type_section') == 'IAV' %}selected{% endif %}>IAV</option>
+            <option value="aucun" {% if request.args.get('type_section') == 'aucun' %}selected{% endif %}>Aucun</option>
         </select>
     </div>
     <div class="col-md-2">
@@ -96,7 +104,13 @@
                 <td>{{ student.nom or '' }}</td>
                 <td>{{ student.prenom or '' }}</td>
                 <td>{{ student.filiere_name or '' }}</td>
-                <td>{{ student.type_section or '' }}</td>
+                <td>
+                    {% if student.type_section %}
+                        {{ student.type_section }}
+                    {% else %}
+                        Aucun
+                    {% endif %}
+                </td>
                 <td>
                     {% if student.num_chambre and student.num_chambre != 'Aucune' %}
                         {{ student.num_chambre }}

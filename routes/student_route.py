@@ -24,9 +24,11 @@ def list_students():
     per_page = 10  # Number of students per page
     
     # Get filter parameters
-    search = request.args.get('search', '')
+    search = request.args.get('keyword', '')
     filiere_id = request.args.get('filiere', type=int)
-    internat = request.args.get('internat', '')
+    internat = request.args.get('type_section', '')
+    pavilion = request.args.get('pavilion', '')
+    chambre = request.args.get('chambre', '')
     
     # Get paginated students
     students, total = student_controller.get_paginated_students(
@@ -34,7 +36,9 @@ def list_students():
         per_page=per_page,
         search=search,
         filiere_id=filiere_id,
-        internat=internat
+        internat=internat,
+        pavilion=pavilion,
+        chambre=chambre
     )
     
     # Create custom pagination object

@@ -65,7 +65,7 @@
                                                 <tr><th>Filière:</th><td>{{ student.filiere_name }}</td></tr>
                                                 <tr><th>Année universitaire:</th><td>{{ student.annee_universitaire }}</td></tr>
                                                 <tr><th>Chambre:</th><td>{{ student.num_chambre if student.num_chambre not in [None, '', 'no room'] else 'Aucune' }}</td></tr>
-                                                <tr><th>Internat:</th><td>{{ student.type_section }}</td></tr>
+                                                <tr><th>Internat:</th><td>{% if student.type_section %}{{ student.type_section }}{% else %}Aucun{% endif %}</td></tr>
                                                 <tr><th>Mobilité:</th><td>{{ student.mobilite }}</td></tr>
                                                 <tr><th>Vie associative:</th><td>{{ student.vie_associative }}</td></tr>
                                                 <tr><th>Bourse:</th><td>{{ student.bourse }}</td></tr>

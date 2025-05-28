@@ -148,3 +148,44 @@ def ensure_database_and_tables():
     finally:
         cursor.close()
         conn.close()
+
+def create_dummy_data():
+    from models.student import Student
+    from models.room import Room
+    from models.filiere import Filiere
+    from models.user import User
+    import random
+    from datetime import datetime
+
+    # Add sample filieres
+    filiere_model = Filiere()
+    filiere_names = ['Informatique', 'Agronomie', 'Génie Rural']
+    filiere_ids = []
+    for name in filiere_names:
+        filiere = filiere_model.add_filiere({'name': name})
+        filiere_ids.append(filiere['id'] if isinstance(filiere, dict) and 'id' in filiere else filiere_model.cursor.lastrowid)
+
+    # Add sample rooms
+    room_model = Room()
+    rooms = [
+        {'room_number': 'A101', 'pavilion': 'A', 'room_type': 'single', 'capacity': 1},
+        {'room_number': 'B202', 'pavilion': 'B', 'room_type': 'double', 'capacity': 2},
+        {'room_number': 'C303', 'pavilion': 'C', 'room_type': 'triple', 'capacity': 3},
+    ]
+    for room in rooms:
+        room_model.add_room(room)
+
+    # Add sample students
+    student_model = Student()
+    students = [
+        {'nom': 'Dupont', 'prenom': 'Jean', 'matricule': 'STU001', 'sexe': 'M', 'cin': 'CIN000001', 'date_naissance': '2000-01-01', 'nationalite': 'Marocaine', 'telephone': '0600000001', 'email': 'jean.dupont@example.com', 'annee_universitaire': f'{datetime.now().year}/{datetime.now().year+1}', 'filiere_id': filiere_ids[0], 'num_chambre': 'A101', 'type_section': 'IAV'},
+        {'nom': 'Martin', 'prenom': 'Marie', 'matricule': 'STU002', 'sexe': 'F', 'cin': 'CIN000002', 'date_naissance': '2001-02-02', 'nationalite': 'Marocaine', 'telephone': '0600000002', 'email': 'marie.martin@example.com', 'annee_universitaire': f'{datetime.now().year}/{datetime.now().year+1}', 'filiere_id': filiere_ids[1], 'num_chambre': 'B202', 'type_section': 'APESA'},
+        {'nom': 'Bernard', 'prenom': 'Pierre', 'matricule': 'STU003', 'sexe': 'M', 'cin': 'CIN000003', 'date_naissance': '2002-03-03', 'nationalite': 'Marocaine', 'telephone': '0600000003', 'email': 'pierre.bernard@example.com', 'annee_universitaire': f'{datetime.now().year}/{datetime.now().year+1}', 'filiere_id': filiere_ids[2], 'num_chambre': 'C303', 'type_section': 'IAV'},
+    ]
+    for student in students:
+        student_model.create_student(student)
+
+    # Add default admin user
+    user_model = User()
+    if not user_model.get_user_by_username('admin'):
+        user_model.create_user({'username': 'admin', 'password': 'admin', 'role': 'admin'})

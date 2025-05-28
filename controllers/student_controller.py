@@ -8,17 +8,15 @@ class StudentController:
     def list_students(self):
         return self.student_model.get_all_students()
 
-    def get_paginated_students(self, page=1, per_page=10, search='', filiere_id=None, internat=''):
+    def get_paginated_students(self, page=1, per_page=10, search='', filiere_id=None, internat='', pavilion=None, chambre=None):
         """
         Get paginated students with optional filtering
         Returns a tuple of (students, total_count)
         """
         # Get all students first (we'll filter them in memory)
         all_students = self.list_students()
-        
-        # Apply filters
         filtered_students = all_students
-        
+
         if search:
             search = search.lower()
             filtered_students = [
@@ -28,27 +26,37 @@ class StudentController:
                    search in s.get('matricule', '').lower() or
                    search in s.get('cin', '').lower()
             ]
-            
         if filiere_id:
             filtered_students = [
                 s for s in filtered_students
                 if s.get('filiere_id') == filiere_id
             ]
-            
         if internat:
+            if internat == 'aucun':
+                filtered_students = [
+                    s for s in filtered_students
+                    if not s.get('type_section')
+                ]
+            else:
+                filtered_students = [
+                    s for s in filtered_students
+                    if s.get('type_section') == internat
+                ]
+        if pavilion:
             filtered_students = [
                 s for s in filtered_students
-                if s.get('internat') == internat
+                if s.get('pavilion') == pavilion
             ]
-        
+        if chambre:
+            filtered_students = [
+                s for s in filtered_students
+                if s.get('num_chambre') == chambre
+            ]
         # Calculate pagination
         total = len(filtered_students)
         start_idx = (page - 1) * per_page
         end_idx = start_idx + per_page
-        
-        # Get the page of students
         paginated_students = filtered_students[start_idx:end_idx]
-        
         return paginated_students, total
 
     def add_student(self, data, files=None):
