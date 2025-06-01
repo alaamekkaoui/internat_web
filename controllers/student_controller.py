@@ -168,3 +168,5 @@ class StudentController:
                 room = next((r for r in rooms if r.get('room_number') == s['num_chambre']), None)
                 s['pavilion'] = room['pavilion'] if room else ''
         return students
+
+

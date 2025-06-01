@@ -109,19 +109,9 @@ def ensure_database_and_tables():
                 print(f"Error creating filieres table: {e}")
 
         # Create room_history table if not exists
-        if 'room_history' not in existing_tables:
-            print("Creating room_history table...")
-            print('''
-            CREATE TABLE IF NOT EXISTS room_history (
-                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-                student_id BIGINT UNSIGNED NOT NULL,
-                room_id BIGINT UNSIGNED NOT NULL,
-                year VARCHAR(16) NOT NULL,
-                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (student_id) REFERENCES students(id),
-                FOREIGN KEY (room_id) REFERENCES rooms(id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            ''')
+        # if 'room_history' not in existing_tables:
+        #     print("")
+        #     print("Creating room_history table...")
             
         # Create users table if not exists
         if 'users' not in existing_tables:

@@ -52,7 +52,7 @@ def create_default_admin_user_util():
         # Create admin user
         success, message = user_model.create_user(
             username='admin',
-            password='admin123',
+            password='admin',
             role='admin'
         )
         

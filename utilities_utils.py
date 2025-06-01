@@ -1,5 +1,3 @@
-# utilities_utils.py
-# Merged utilities from utilities and utils folders
 
 from utilities.file_utils import *
 from utilities.pdf_utils import *
