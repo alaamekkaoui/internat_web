@@ -1,0 +1,44 @@
+/* Modern QSS stylesheet for Internat Desktop App */
+QWidget {
+    background: #f5f7fa;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 14px;
+}
+QLabel {
+    color: #222;
+}
+QPushButton {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0077b6, stop:1 #00b4d8);
+    color: white;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-weight: bold;
+    margin: 6px 0;
+}
+QPushButton:hover {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #00b4d8, stop:1 #0077b6);
+}
+QLineEdit {
+    border: 1px solid #b0bec5;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #fff;
+    margin-bottom: 8px;
+}
+QTableWidget {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    gridline-color: #b0bec5;
+}
+QHeaderView::section {
+    background: #0077b6;
+    color: white;
+    font-weight: bold;
+    border: none;
+    padding: 6px;
+}
+QDialog {
+    background: #f5f7fa;
+    border-radius: 12px;
+}
