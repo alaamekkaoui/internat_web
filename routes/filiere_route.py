@@ -137,17 +137,33 @@ def export_filieres_pdf():
         if isinstance(filieres, dict) and 'error' in filieres:
             flash(filieres['error'], 'danger')
             return redirect(url_for('filiere.list_filieres'))
-        from utilities.pdf_utils import export_pdf
+
+        # Generate PDF
         pdf_buffer = export_pdf(filieres)
         if not pdf_buffer:
-            flash('Error generating PDF', 'danger')
+            flash('Erreur lors de la génération du PDF', 'danger')
             return redirect(url_for('filiere.list_filieres'))
-        return send_file(
-            pdf_buffer,
-            as_attachment=True,
-            download_name='filieres.pdf',
-            mimetype='application/pdf'
-        )
+
+        # Create a temporary file
+        import tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+            tmp.write(pdf_buffer.getvalue())
+            tmp_path = tmp.name
+
+        # Send the file and then delete it
+        try:
+            return send_file(
+                tmp_path,
+                as_attachment=True,
+                download_name='filieres.pdf',
+                mimetype='application/pdf'
+            )
+        finally:
+            # Clean up the temporary file
+            try:
+                os.unlink(tmp_path)
+            except:
+                pass
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('filiere.list_filieres'))

@@ -19,7 +19,7 @@ student_controller = StudentController()
 
 @student_bp.route('/students', methods=['GET'])
 def list_students():
-    print('student_route.list_students called')
+    print('student_route.list_students appelé')
     page = request.args.get('page', 1, type=int)
     per_page = 10  # Number of students per page
     
@@ -84,7 +84,7 @@ def list_students():
 @student_bp.route('/students/add', methods=['GET', 'POST'])
 @login_required
 def add_student():
-    print('student_route.add_student called')
+    print('student_route.add_student appelé')
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
     if request.method == 'POST':
@@ -93,13 +93,13 @@ def add_student():
         if 'error' in result:
             flash(result['error'], 'danger')
             return render_template('student/add.html', filieres=filieres, rooms=rooms)
-        flash('Student added successfully!', 'success')
+        flash('Étudiant ajouté avec succès!', 'success')
         return redirect(url_for('student.list_students'))
     return render_template('student/add.html', filieres=filieres, rooms=rooms)
 
 @student_bp.route('/students/<int:student_id>', methods=['GET'])
 def student_profile(student_id):
-    print('student_route.student_profile called')
+    print('student_route.student_profile appelé')
     result = student_controller.get_student(student_id)
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
@@ -112,13 +112,16 @@ def student_profile(student_id):
 @login_required
 # @role_required('admin') # Uncomment if only admins can delete
 def delete_student(student_id):
-    print('student_route.delete_student called')
+    print('student_route.delete_student appelé')
     try:
         result = student_controller.delete_student(student_id)
-        if 'error' in result:
+        if isinstance(result, dict) and 'error' in result:
             flash(result['error'], 'danger')
             return redirect(url_for('student.list_students'))
-        flash('Student deleted successfully!', 'success')
+        if result is True:
+            flash('Étudiant supprimé avec succès!', 'success')
+        else:
+            flash('Échec de la suppression de l\'étudiant', 'danger')
         return redirect(url_for('student.list_students'))
     except Exception as e:
         flash(str(e), 'danger')
@@ -126,10 +129,10 @@ def delete_student(student_id):
 
 @student_bp.route('/students/export/xlsx', methods=['GET'])
 def export_students_xlsx():
-    print('student_route.export_students_xlsx called')
+    print('student_route.export_students_xlsx appelé')
     try:
         students = student_controller.list_students()
-        return export_xlsx(students, filename='students.xlsx')
+        return export_xlsx(students, filename='etudiants.xlsx')
     except Exception as e:
         flash(str(e), 'danger')
         return redirect(url_for('student.list_students'))
@@ -137,7 +140,7 @@ def export_students_xlsx():
 @student_bp.route('/students/import/xlsx', methods=['POST'])
 @login_required
 def import_students_xlsx():
-    print('student_route.import_students_xlsx called')
+    print('student_route.import_students_xlsx appelé')
     file = request.files['file']
     data = import_xlsx(file)
     # All fields are now optional for import
@@ -185,23 +188,52 @@ def import_students_xlsx():
         flash(msg, 'success')
     return redirect(url_for('student.list_students'))
 
+@student_bp.route('/students/<int:student_id>/download-pdf', methods=['GET'])
+def download_pdf(student_id):
+    print('student_route.download_pdf appelé')
+    try:
+        student = student_controller.get_student(student_id)
+        if not student:
+            flash('Étudiant non trouvé', 'danger')
+            return redirect(url_for('student.list_students'))
+
+        # Generate PDF
+        pdf_buffer = generate_student_pdf(student)
+        if not pdf_buffer:
+            flash('Erreur lors de la génération du PDF', 'danger')
+            return redirect(url_for('student.student_profile', student_id=student_id))
+
+        # Send the PDF file
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"profil_{student['nom']}_{student['prenom']}.pdf",
+            mimetype='application/pdf'
+        )
+    except Exception as e:
+        flash(f'Erreur lors de la génération du PDF: {str(e)}', 'danger')
+        return redirect(url_for('student.student_profile', student_id=student_id))
+
 @student_bp.route('/students/export/pdf', methods=['GET'])
 def export_students_pdf():
-    print('student_route.export_students_pdf called')
+    print('student_route.export_students_pdf appelé')
     try:
         students = student_controller.list_students()
         if isinstance(students, dict) and 'error' in students:
             flash(students['error'], 'danger')
             return redirect(url_for('student.list_students'))
-        from utilities.pdf_utils import export_pdf
+
+        # Generate PDF
         pdf_buffer = export_pdf(students)
         if not pdf_buffer:
-            flash('Error generating PDF', 'danger')
+            flash('Erreur lors de la génération du PDF', 'danger')
             return redirect(url_for('student.list_students'))
+
+        # Send the PDF file
         return send_file(
             pdf_buffer,
             as_attachment=True,
-            download_name='students.pdf',
+            download_name='etudiants.pdf',
             mimetype='application/pdf'
         )
     except Exception as e:
@@ -209,19 +241,19 @@ def export_students_pdf():
         return redirect(url_for('student.list_students'))
 
 @student_bp.route('/students/<int:student_id>/upload-image', methods=['POST'])
-@login_required # Modifies student data
+@login_required
 def upload_student_image(student_id):
-    print('student_route.upload_student_image called')
+    print('student_route.upload_student_image appelé')
     try:
         # Get student info
         student = student_controller.get_student(student_id)
         if not student:
-            flash('Student not found', 'danger')
+            flash('Étudiant non trouvé', 'danger')
             return redirect(url_for('student.list_students'))
 
         # Handle file upload
         upload_dir = os.path.join('static', 'uploads')
-        filename_prefix = f"{student['nom']}_{student['prenom']}"
+        filename_prefix = student['matricule']  # Use matricule instead of name
         
         result = handle_file_upload(
             file=request.files.get('image'),
@@ -239,21 +271,21 @@ def upload_student_image(student_id):
             if 'error' in update_result:
                 flash(update_result['error'], 'danger')
             else:
-                flash('Image uploaded successfully!', 'success')
+                flash('Image téléchargée avec succès!', 'success')
         except Exception as e:
-            flash('Error updating student record', 'danger')
+            flash('Erreur lors de la mise à jour du profil', 'danger')
             return redirect(url_for('student.student_profile', student_id=student_id))
 
         return redirect(url_for('student.student_profile', student_id=student_id))
 
     except Exception as e:
-        flash(f'Unexpected error: {str(e)}', 'danger')
+        flash(f'Erreur inattendue: {str(e)}', 'danger')
         return redirect(url_for('student.student_profile', student_id=student_id))
 
 @student_bp.route('/students/<int:student_id>/modify', methods=['GET', 'POST'])
 @login_required
 def modify_student(student_id):
-    print('student_route.modify_student called')
+    print('student_route.modify_student appelé')
     filieres = FiliereController().list_filieres()
     rooms = RoomController().list_rooms()
     if request.method == 'POST':
@@ -263,24 +295,14 @@ def modify_student(student_id):
             flash(result['error'], 'danger')
             student = student_controller.get_student(student_id)
             return render_template('student/edit.html', student=student, filieres=filieres, rooms=rooms)
-        flash('Student updated successfully!', 'success')
+        flash('Profil étudiant mis à jour avec succès!', 'success')
         return redirect(url_for('student.student_profile', student_id=student_id))
     # GET request - show edit form
     student = student_controller.get_student(student_id)
     if not student:
-        flash('Student not found', 'danger')
+        flash('Étudiant non trouvé', 'danger')
         return redirect(url_for('student.list_students'))
     return render_template('student/edit.html', student=student, filieres=filieres, rooms=rooms)
-
-@student_bp.route('/students/<int:student_id>/download-pdf', methods=['GET'])
-def download_pdf(student_id):
-    print('student_route.download_pdf called')
-    # You should implement PDF generation logic here. For now, serve a static or pre-generated PDF.
-    pdf_path = f'static/pdfs/student_{student_id}.pdf'
-    if not os.path.exists(pdf_path):
-        flash('PDF non trouvé pour cet étudiant.', 'danger')
-        return redirect(url_for('student.list_students'))
-    return export_pdf(pdf_path)
 
 @student_bp.route('/<int:student_id>/export-pdf')
 def export_pdf(student_id):

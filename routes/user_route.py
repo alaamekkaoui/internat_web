@@ -65,7 +65,7 @@ def register():
             else:
                 flash(message, 'danger')
         except Exception as e:
-            print(f"Error creating user: {str(e)}")
+            print(f"Erreur lors de la création de l'utilisateur: {str(e)}")
             flash('Une erreur est survenue lors de l\'inscription', 'danger')
     
     return render_template('user/register.html')
@@ -82,47 +82,102 @@ def logout():
 @login_required
 @admin_required
 def list_users():
+    print('user_route.list_users appelé')
     users = user_controller.list_users()
     return render_template('user/list.html', users=users)
 
-@user_bp.route('/profile')
+@user_bp.route('/profile', methods=['GET'])
 @login_required
 def profile():
+    print('user_route.profile appelé')
     user = user_controller.get_user_by_id(session.get('user_id'))
     if not user:
         flash('Utilisateur non trouvé', 'danger')
         return redirect(url_for('home.home'))
     return render_template('user/profile.html', user=user)
 
-@user_bp.route('/profile/change-password', methods=['GET', 'POST'])
+@user_bp.route('/update-password', methods=['POST'])
 @login_required
-def change_password():
+def update_password():
+    print('user_route.update_password appelé')
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if not current_password or not new_password or not confirm_password:
+        flash('Tous les champs sont requis', 'danger')
+        return redirect(url_for('user.profile'))
+
+    if new_password != confirm_password:
+        flash('Les mots de passe ne correspondent pas', 'danger')
+        return redirect(url_for('user.profile'))
+
+    result = user_controller.update_password(
+        user_id=session.get('user_id'),
+        current_password=current_password,
+        new_password=new_password
+    )
+
+    if isinstance(result, dict) and 'error' in result:
+        flash(result['error'], 'danger')
+    else:
+        flash('Mot de passe mis à jour avec succès', 'success')
+
+    return redirect(url_for('user.profile'))
+
+@user_bp.route('/users/<int:user_id>/modify', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def modify_user(user_id):
+    print('user_route.modify_user appelé')
     if request.method == 'POST':
-        current_password = request.form.get('current_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
+        data = {
+            'username': request.form.get('username'),
+            'role': request.form.get('role', 'user')
+        }
         
-        if new_password != confirm_password:
-            flash('Les mots de passe ne correspondent pas', 'danger')
-            return redirect(url_for('user.change_password'))
-        
-        success, message = user_controller.change_password(
-            session.get('user_id'),
-            current_password,
-            new_password
-        )
-        
+        # Don't allow changing admin role if it's the last admin
+        if data['role'] != 'admin' and user_controller.is_last_admin(user_id):
+            flash('Impossible de retirer le rôle admin du dernier administrateur', 'danger')
+            return redirect(url_for('user.list_users'))
+            
+        success, message = user_controller.update_user_profile(user_id, data)
         if success:
-            flash(message, 'success')
-            return redirect(url_for('user.profile'))
-        flash(message, 'danger')
-    
-    return render_template('user/change_password.html')
+            flash('Profil utilisateur mis à jour avec succès', 'success')
+        else:
+            flash(message, 'danger')
+        return redirect(url_for('user.list_users'))
+        
+    user = user_controller.get_user_by_id(user_id)
+    if not user:
+        flash('Utilisateur non trouvé', 'danger')
+        return redirect(url_for('user.list_users'))
+    return render_template('user/modify.html', user=user)
 
 @user_bp.route('/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_user(user_id):
+    print('user_route.delete_user appelé')
+    # Prevent self-deletion
+    if user_id == session.get('user_id'):
+        flash('Vous ne pouvez pas supprimer votre propre compte', 'danger')
+        return redirect(url_for('user.list_users'))
+        
+    # Get user to check role
+    user = user_controller.get_user_by_id(user_id)
+    if not user:
+        flash('Utilisateur non trouvé', 'danger')
+        return redirect(url_for('user.list_users'))
+        
+    # Check if it's the last admin
+    if user_controller.is_last_admin(user_id):
+        flash('Impossible de supprimer le dernier administrateur', 'danger')
+        return redirect(url_for('user.list_users'))
+        
     success, message = user_controller.delete_user(user_id)
-    flash(message, 'success' if success else 'danger')
+    if success:
+        flash('Utilisateur supprimé avec succès', 'success')
+    else:
+        flash(message, 'danger')
     return redirect(url_for('user.list_users'))

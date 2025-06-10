@@ -7,41 +7,47 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <div class="display-1 mb-3">
-                            <i class="bi bi-person-circle text-primary"></i>
-                        </div>
-                        <h2>Profil Utilisateur</h2>
-                    </div>
-
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="bi bi-person-circle"></i> Mon Profil</h4>
+                </div>
+                <div class="card-body">
                     <div class="row mb-4">
                         <div class="col-md-6">
-                            <h5 class="text-muted mb-2">Nom d'utilisateur</h5>
-                            <p class="h4">{{ user.username }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <h5 class="text-muted mb-2">Rôle</h5>
-                            <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %} fs-6">
-                                {{ user.role }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h5 class="text-muted mb-2">Date d'inscription</h5>
-                            <p class="h4">{{ user.created_at.strftime('%d/%m/%Y') }}</p>
+                            <h5 class="text-muted">Informations du compte</h5>
+                            <hr>
+                            <p><strong>Nom d'utilisateur:</strong> {{ user.username }}</p>
+                            <p><strong>Rôle:</strong> 
+                                <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
+                                    {{ user.role }}
+                                </span>
+                            </p>
+                            <p><strong>Date de création:</strong> {{ user.created_at }}</p>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-center gap-3 mt-4">
-                        <a href="{{ url_for('user.edit_profile') }}" class="btn btn-primary">
-                            <i class="bi bi-pencil"></i> Modifier le profil
-                        </a>
-                        <a href="{{ url_for('user.change_password') }}" class="btn btn-outline-primary">
-                            <i class="bi bi-key"></i> Changer le mot de passe
-                        </a>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-muted">Changer le mot de passe</h5>
+                            <hr>
+                            <form action="{{ url_for('user.update_password') }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-3">
+                                    <label for="current_password" class="form-label">Mot de passe actuel</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">Nouveau mot de passe</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-key"></i> Mettre à jour le mot de passe
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -50,18 +56,23 @@
 </div>
 
 <style>
-.text-primary {
-    color: #145A32 !important;
+.card {
+    border: none;
+    border-radius: 15px;
+}
+
+.card-header {
+    border-radius: 15px 15px 0 0 !important;
 }
 
 .badge {
-    font-weight: 500;
-    padding: 8px 12px;
+    font-size: 0.9em;
+    padding: 6px 12px;
 }
 
-.btn {
-    padding: 10px 20px;
-    border-radius: 10px;
+.form-control:focus {
+    border-color: #145A32;
+    box-shadow: 0 0 0 0.2rem rgba(20, 90, 50, 0.25);
 }
 
 .btn-primary {
@@ -70,22 +81,8 @@
 }
 
 .btn-primary:hover {
-    background-color: #0F4C2A;
-    border-color: #0F4C2A;
-}
-
-.btn-outline-primary {
-    color: #145A32;
-    border-color: #145A32;
-}
-
-.btn-outline-primary:hover {
-    background-color: #145A32;
-    border-color: #145A32;
-}
-
-.display-1 {
-    font-size: 4rem;
+    background-color: #0E3D22;
+    border-color: #0E3D22;
 }
 </style>
 {% endblock %} 

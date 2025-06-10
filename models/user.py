@@ -66,14 +66,15 @@ class User:
             return False, 'Erreur lors de la mise à jour de l\'utilisateur'
     
     def delete_user(self, user_id):
+        """Delete a user by ID"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute('DELETE FROM users WHERE id = %s', (user_id,))
+            cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
             self.conn.commit()
-            return True, 'Utilisateur supprimé avec succès'
+            return True, "Utilisateur supprimé avec succès"
         except Exception as e:
-            print(f"Error deleting user: {str(e)}")
-            return False, 'Erreur lors de la suppression de l\'utilisateur'
+            self.conn.rollback()
+            return False, f"Erreur lors de la suppression: {str(e)}"
     
     def list_users(self):
         try:
@@ -103,3 +104,14 @@ class User:
         except Exception as e:
             print(f"Error changing password: {str(e)}")
             return False, 'Erreur lors du changement de mot de passe'
+
+    def count_users_by_role(self, role):
+        """Count number of users with a specific role"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute("SELECT COUNT(*) as count FROM users WHERE role = %s", (role,))
+            result = cursor.fetchone()
+            return result['count'] if result else 0
+        except Exception as e:
+            print(f"Erreur lors du comptage des utilisateurs par rôle: {str(e)}")
+            return 0

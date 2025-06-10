@@ -70,12 +70,14 @@
                     <a href="/rooms/edit/{{ room.room_number }}" class="btn btn-sm btn-outline-primary" title="Modifier">
                         <i class="bi bi-pencil-square"></i>
                     </a>
+                    {% if session.get('role') == 'admin' %}
                     <form action="/rooms/delete/{{ room.room_number }}" method="POST" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette chambre ?');" title="Supprimer">
                             <i class="bi bi-trash-fill"></i>
                         </button>
                     </form>
+                    {% endif %}
                 </div>
             </td>
         </tr>

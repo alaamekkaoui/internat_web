@@ -109,12 +109,14 @@
                         <a href="/filieres/{{ filiere.id }}/edit" class="btn btn-sm btn-primary" title="Modifier">
                             <i class="bi bi-pencil"></i>
                         </a>
+                        {% if session.get('role') == 'admin' %}
                         <form action="/filieres/{{ filiere.id }}/delete" method="POST" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Supprimer cette filière ?');" title="Supprimer">
                                 <i class="bi bi-trash-fill"></i>
                             </button>
                         </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

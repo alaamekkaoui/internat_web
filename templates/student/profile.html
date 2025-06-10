@@ -80,9 +80,11 @@
                         <a href="{{ url_for('student.modify_student', student_id=student.id) }}" class="btn btn-outline-warning">
                             <i class="bi bi-pencil"></i> Modifier
                         </a>
+                        {% if session.get('role') == 'admin' %}
                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                             <i class="bi bi-trash"></i> Supprimer
                         </button>
+                        {% endif %}
                         <a href="{{ url_for('student.list_students') }}" class="btn btn-outline-success">
                             <i class="bi bi-arrow-left"></i> Retour à la liste
                         </a>
@@ -94,6 +96,7 @@
 </div>
 
 <!-- Delete Confirmation Modal -->
+{% if session.get('role') == 'admin' %}
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -113,6 +116,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block css %}

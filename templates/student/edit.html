@@ -50,6 +50,21 @@
                         <input type="email" class="form-control" id="email" name="email" value="{{ student.email }}" required>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="photo" class="form-label">Photo</label>
+                        {% if student.photo %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('static', filename='uploads/' + student.photo) }}" 
+                                 alt="Photo actuelle" 
+                                 class="img-thumbnail" 
+                                 style="max-width: 150px;">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="photo" name="photo" accept="image/*">
+                        <div class="form-text">Format accepté: JPG, PNG. La photo sera renommée avec le matricule de l'étudiant.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
